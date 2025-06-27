@@ -36,8 +36,8 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char *ssid = "Instituto";
-const char *password = "Cucei.2023b";
+const char *ssid = "TP-Link_5AEA";
+const char *password = "55329484";
 
 void startCameraServer();
 void setupLedFlash(int pin);
