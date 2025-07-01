@@ -1,0 +1,20 @@
+{
+  "datos": [
+    {
+      "temperatura": 76,
+      "humedad": 52,
+      "luminosidad": 89
+    },
+    {
+      "temperatura": 34,
+      "humedad": 60,
+      "luminosidad": 73
+    },
+    {
+      "temperatura": 90,
+      "humedad": 40,
+      "luminosidad": 50
+    }
+  ]
+}
+
