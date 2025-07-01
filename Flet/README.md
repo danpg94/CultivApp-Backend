@@ -16,7 +16,7 @@ Run as a web app:
 uv run flet run --web
 ```
 
-### Poetry
+### PIP
 
 Install dependencies from `pyproject.toml`:
 
@@ -27,13 +27,13 @@ pip3 install "flet[all]"
 Run as a desktop app:
 
 ```
-poetry run flet run
+run flet run
 ```
 
 Run as a web app:
 
 ```
-poetry run flet run --web
+run flet run --web
 ```
 
 For more details on running the app, refer to the [Getting Started Guide](https://flet.dev/docs/getting-started/).
