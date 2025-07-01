@@ -17,6 +17,7 @@ while True:
     print("\nTemperature: %0.2f C" % temp_sensor.temperature)
     print("Humidity: %0.2f %%" % temp_sensor.relative_humidity)
     print("Luminance: {:.2f} lux".format(lux))
+    sensorPercent = 0
 
     sensorAnalog = adc.read()
     if sensorAnalog >= 50:
