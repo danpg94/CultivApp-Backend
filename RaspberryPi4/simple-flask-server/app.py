@@ -5,9 +5,9 @@ from flask import Flask
 
 app = Flask(__name__)
 
-# Change to the IP of device running this app 
-ip = '192.168.0.7'
-
+# Change to the IP of device running this app
+# ip = '192.168.0.7' # Home IP 
+ip = '192.168.0.103' # Lab IP
 @app.route('/')
 @app.route('/index')
 def index():
