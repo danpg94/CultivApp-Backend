@@ -21,7 +21,7 @@ uv run flet run --web
 Install dependencies from `pyproject.toml`:
 
 ```
-poetry install
+pip3 install "flet[all]"
 ```
 
 Run as a desktop app:
