@@ -1,14 +1,20 @@
 #Simple Flask test program
 # connect to 
 
+import subprocess
 from flask import Flask, request
 from datetime import datetime
 
 app = Flask(__name__)
 
+# Get current assigned IP using hostname command on Linux
+y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
+ipAddrs = y.stdout.split()
+ip = ipAddrs[0].decode("utf-8")
+
 # Change to the IP of device running this app
 # ip = '192.168.0.7' # Home IP 
-ip = '192.168.0.103' # Lab IP
+# ip = '192.168.0.103' # Lab IP
 @app.route('/')
 @app.route('/index')
 def index():
