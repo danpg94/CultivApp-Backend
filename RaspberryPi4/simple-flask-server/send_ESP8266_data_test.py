@@ -14,7 +14,7 @@ parser.add_argument('-c', '--count', default=3)
 parser.add_argument('-s', '--sleep', default=1)
 
 def send_info(ip):
-    HTTP_HEADERS = {'Content-Type': 'application/json', 'Accept': 'text/plain'}
+    HTTP_HEADERS = {'Content-Type': 'application/json'}
 
     temp = str("{:.2f}".format(random.uniform(18, 36)))
     rel_hum =  str("{:.2f}".format(random.uniform(95, 100)))
@@ -26,10 +26,12 @@ def send_info(ip):
             "rel_hum": rel_hum,
             "lux": lux,
             "moi_ana": moi_ana,
-            "moi_percent": moi_percent}
+            "moi_percent": moi_percent
+            }
     response = requests.post(f'http://{ip}:5000/tock', json=data, headers=HTTP_HEADERS)
     print(f"Sending data: {data}")
     print(f"Response: {response.status_code}\n")
+    print(f"Info: {response.json()}")
 
 if __name__ == "__main__":
     args = parser.parse_args()
