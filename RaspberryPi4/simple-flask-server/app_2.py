@@ -5,7 +5,17 @@ import subprocess
 from flask import Flask, request
 from datetime import datetime
 
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from pymongo.errors import ConnectionFailure
+
 app = Flask(__name__)
+
+try:
+    client = MongoClient("mongodb://dan:test@0.0.0.0:27017", server_api=ServerApi('1'))
+    client.admin.command('ping')
+except ConnectionFailure as e:
+    print(f"Could not connect to mongoDB database {e}")
 
 # Get current assigned IP using hostname command on Linux
 y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
