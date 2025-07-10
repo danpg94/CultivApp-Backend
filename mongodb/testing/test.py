@@ -4,10 +4,12 @@ from dotenv import load_dotenv, find_dotenv
 import os
 load_dotenv(find_dotenv())
 
+user = os.environ.get("MONGODB_USER")
 password = os.environ.get("MONGODB_PWD")
+db_name = os.environ.get("MONGODB_DB")
 
-# URI for the cluster. Remember to have an .env file with password for MongoDB Atlas account
-uri = f"mongodb+srv://danpg94:{password}@cherry-cluster.n0x2vso.mongodb.net/?retryWrites=true&w=majority&appName=Cherry-Cluster"
+# URI for the cluster. Remember to have an .env file with user, password and DB name for MongoDB Atlas account
+uri = f"mongodb+srv://{user}:{password}@{db_name}.n0x2vso.mongodb.net/?retryWrites=true&w=majority&appName=Cherry-Cluster"
 
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
