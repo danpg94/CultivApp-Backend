@@ -7,8 +7,8 @@ from machine import Pin, SoftI2C, ADC
 import ahtx0
 from bh1750 import BH1750
 
-ssid = 'TP-Link_5AEA'
-pswd = '55329484'
+ssid = 'IZZI-37B9'
+pswd = '98F781F737B9'
 
 i2c = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
 temp_sensor = ahtx0.AHT10(i2c)
@@ -33,11 +33,11 @@ def sensor_data():
     data = dict()
     lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
     print("\nTemperature: %0.2f C" % temp_sensor.temperature)
-    data['temp'] = temp_sensor.temperature
+    data['temp'] = str(temp_sensor.temperature)
     print("Humidity: %0.2f %%" % temp_sensor.relative_humidity)
-    data['rel_hum'] = temp_sensor.relative_humidity
+    data['rel_hum'] = str(temp_sensor.relative_humidity)
     print("Luminance: {:.2f} lux".format(lux))
-    data['lux'] = lux
+    data['lux'] = str(lux)
     sensorPercent = 0
 
     sensorAnalog = adc.read()
@@ -53,18 +53,18 @@ def sensor_data():
 
     print("Soil Moisture Value: {:.2f}".format(sensorAnalog))
     print("Soil Moisture Percent: {:.2}".format(sensorPercent))
-    data['moi_ana'] = sensorAnalog
-    data['moi_percent'] = sensorPercent
+    data['moi_ana'] = str(sensorAnalog)
+    data['moi_percent'] = str(sensorPercent)
     return data
 
 do_connect()
 
 while (1):
-    response = request.get(url='http://192.168.0.103:5000/tick')
+    response = request.get(url='http://192.168.0.6:5000/tick')
     if response.status_code == 200:
         print(response.text)
     data = sensor_data()
-    req = request.post('http://192.168.0.103:5000/tock', json = data, headers = HTTP_HEADERS ) 
+    req = request.post('http://192.168.0.6:5000/tock', json = data, headers = HTTP_HEADERS ) 
     req.close()
     utime.sleep(5)
 
