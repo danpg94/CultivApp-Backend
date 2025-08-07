@@ -20,6 +20,12 @@ try:
 except ConnectionFailure as e:
     print(f"Could not connect to mongoDB database {e}")
 
+# Define database or create database if not exists
+
+plant_db = client["plant_data"]
+plant_collection = plant_db["plant_1"]
+
+
 # Get current assigned IP using hostname command on Linux
 y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
 ipAddrs = y.stdout.split()
@@ -62,11 +68,23 @@ def hello():
 def handle_json():
     if request.method == "POST":
         data = request.json
-        print(data.get('temp'))
-        print(data.get('rel_hum'))
-        print(data.get('lux'))
-        print(data.get('moi_ana'))
-        print(data.get('moi_percent'))
+        timestamp_now = datetime.now()
+        print("Timestamp: " + str(timestamp_now))
+        print("Temperature: " + data.get('temp'))
+        print("Relative Humidity: " + data.get('rel_hum'))
+        print("Lux: " + data.get('lux'))
+        print("Moisture Value: " + data.get('moi_ana'))
+        print("Moisture Percent: " + data.get('moi_percent'))
+        plant_collection.insert_one(
+            {
+                "timestamp": timestamp_now,
+                "temperature": data.get('temp'),
+                "relative_humidity": data.get('rel_hum'),
+                "lux": data.get('lux'),
+                "moisture_value": data.get('moi_ana'),
+                "moisture_percent": data.get('moi_percent')
+            }
+        )
         return jsonify({ 'success': True, 'message': 'Added to DB' })
 
 
