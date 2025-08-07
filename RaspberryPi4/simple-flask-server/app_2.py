@@ -69,7 +69,7 @@ def hello():
 def handle_json():
     if request.method == "POST":
         data = request.json
-        unix_timestamp = time.time()
+        unix_timestamp = int(time.time())
         print("Timestamp: " + str(unix_timestamp))
         print("Temperature: " + data.get('temp'))
         print("Relative Humidity: " + data.get('rel_hum'))
