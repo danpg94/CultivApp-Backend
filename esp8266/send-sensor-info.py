@@ -33,11 +33,11 @@ def sensor_data():
     data = dict()
     lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
     print("\nTemperature: %0.2f C" % temp_sensor.temperature)
-    data['temp'] = str(temp_sensor.temperature)
     print("Humidity: %0.2f %%" % temp_sensor.relative_humidity)
-    data['rel_hum'] = str(temp_sensor.relative_humidity)
     print("Luminance: {:.2f} lux".format(lux))
-    data['lux'] = str(lux)
+    data['temp'] = str("{:.2f}".format(temp_sensor.temperature))
+    data['rel_hum'] = str("{:.2f}".format(temp_sensor.relative_humidity))
+    data['lux'] = str("{:.2f}".format(lux))
     sensorPercent = 0
 
     sensorAnalog = adc.read()
@@ -53,8 +53,8 @@ def sensor_data():
 
     print("Soil Moisture Value: {:.2f}".format(sensorAnalog))
     print("Soil Moisture Percent: {:.2}".format(sensorPercent))
-    data['moi_ana'] = str(sensorAnalog)
-    data['moi_percent'] = str(sensorPercent)
+    data['moi_ana'] = str("{:.2f}".format(sensorAnalog))
+    data['moi_percent'] = str("{:.2f}".format(sensorPercent))
     return data
 
 do_connect()
