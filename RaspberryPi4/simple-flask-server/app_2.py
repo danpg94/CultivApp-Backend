@@ -68,8 +68,8 @@ def hello():
 def handle_json():
     if request.method == "POST":
         data = request.json
-        timestamp_now = datetime.now()
-        print("Timestamp: " + str(timestamp_now))
+        unix_timestamp = time.time()
+        print("Timestamp: " + str(unix_timestamp))
         print("Temperature: " + data.get('temp'))
         print("Relative Humidity: " + data.get('rel_hum'))
         print("Lux: " + data.get('lux'))
@@ -77,7 +77,7 @@ def handle_json():
         print("Moisture Percent: " + data.get('moi_percent'))
         plant_collection.insert_one(
             {
-                "timestamp": timestamp_now,
+                "timestamp": unix_timestamp,
                 "temperature": data.get('temp'),
                 "relative_humidity": data.get('rel_hum'),
                 "lux": data.get('lux'),
