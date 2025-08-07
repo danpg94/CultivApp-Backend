@@ -32,8 +32,8 @@ def do_connect():
 def sensor_data():
     data = dict()
     lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
-    print("\nTemperature: %0.2f C" % temp_sensor.temperature)
-    print("Humidity: %0.2f %%" % temp_sensor.relative_humidity)
+    print("\nTemperature: {:.2f} C".format(temp_sensor.temperature))
+    print("Humidity: {:.2f}".format(temp_sensor.relative_humidity))
     print("Luminance: {:.2f} lux".format(lux))
     data['temp'] = str("{:.2f}".format(temp_sensor.temperature))
     data['rel_hum'] = str("{:.2f}".format(temp_sensor.relative_humidity))
