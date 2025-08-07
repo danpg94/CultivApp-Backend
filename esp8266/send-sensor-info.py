@@ -66,6 +66,6 @@ while (1):
     data = sensor_data()
     req = request.post('http://192.168.0.6:5000/tock', json = data, headers = HTTP_HEADERS ) 
     req.close()
-    utime.sleep(5)
+    utime.sleep(30)
 
 
