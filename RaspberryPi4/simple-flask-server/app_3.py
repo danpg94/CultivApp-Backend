@@ -71,6 +71,7 @@ def handle_json():
     if request.method == "POST":
         data = request.json
         unix_timestamp = int(time.time())
+        print("Sensor Number: " + data.get('sensor_num'))
         print("Timestamp: " + str(unix_timestamp))
         print("Temperature: " + data.get('temp'))
         print("Relative Humidity: " + data.get('rel_hum'))

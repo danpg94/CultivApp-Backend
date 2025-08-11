@@ -75,14 +75,15 @@ def sensor_data(mux_select):
 do_connect()
 
 while (1):
-    # response = request.get(url='http://192.168.0.6:5000/tick')
-    # if response.status_code == 200:
-    #     print(response.text)
+    response = request.get(url='http://192.168.0.6:5000/tick')
+    if response.status_code == 200:
+        print(response.text)
     i = 0
     while i < 8:
-        data = sensor_data()
+        data = sensor_data(i)
         req = request.post('http://192.168.0.6:5000/tock', json = data, headers = HTTP_HEADERS ) 
         req.close()
-        utime.sleep(30)
+        utime.sleep(3)
+    utime.sleep(10)
 
 
