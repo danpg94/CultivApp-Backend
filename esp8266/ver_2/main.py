@@ -2,13 +2,21 @@ import network
 import socket
 import utime
 import json
+import ahtx0
+from machine import Pin, SoftI2C
+from bh1750 import BH1750
+
 import urequests as request
 
-ssid = 'IZZI-37B9'
-pswd = '98F781F737B9'
+ssid = 'TP-Link_5AEA'
+pswd = '55329484'
 esp_board_name = 'ESP8266_1'
 
 HTTP_HEADERS = {'Content-Type': 'application/json'}
+
+i2c = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
+temp_sensor = ahtx0.AHT10(i2c)
+light_sensor = BH1750(bus=i2c, addr=0x23)
 
 def do_connect():
     wlan = network.WLAN(network.STA_IF)
@@ -26,7 +34,7 @@ def do_connect():
     send_dev_name = False
     while not (send_dev_name):
         try:
-            response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
+            response = request.post(url='http://192.168.0.101:2000/device', json = data, headers = HTTP_HEADERS)
             if response.status_code == 200:
                 print(response.text)
                 send_dev_name = True
@@ -45,8 +53,16 @@ def setup_socket():
 
 def get_sensor_data():
     data = dict()
+    lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
+    temp = temp_sensor.temperature
+    rel_hum = temp_sensor.relative_humidity
+    print("Temperature: {:.2f} C".format(temp))
+    print("Humidity: {:.2f}".format(rel_hum))
+    print("Luminance: {:.2f} lux".format(lux))
+    data['temp'] = str("{:.2f}".format(temp_sensor.temperature))
+    data['rel_hum'] = str("{:.2f}".format(temp_sensor.relative_humidity))
+    data['lux'] = str("{:.2f}".format(lux))
     # Example
-    data = {"sensor_id": 1, "temperature": 25.5, "humidity": 60}
     return data
 
 def handle_request(client_socket):
