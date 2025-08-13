@@ -1,6 +1,7 @@
 import network
 import socket
 import utime
+import json
 import urequests as request
 
 ssid = 'IZZI-37B9'
@@ -42,17 +43,25 @@ def setup_socket():
     print('Listening on', addr)
     return s
 
+def get_sensor_data():
+    data = dict()
+    # Example
+    data = {"sensor_id": 1, "temperature": 25.5, "humidity": 60}
+    return data
+
 def handle_request(client_socket):
     request = client_socket.recv(1024).decode()
     print('Request:', request)
 
     # Simple routing based on URL path
     if 'GET /data' in request:
-        response = 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nSending Data... [done]\n'
+        data_to_send = get_sensor_data()
+        json_string = json.dumps(data_to_send)
+        response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
     else:
-        response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'
+        response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
     print(response)
-    client_socket.send(response.encode())
+    client_socket.send(response)
     client_socket.close()
 
 
