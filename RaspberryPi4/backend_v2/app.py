@@ -35,14 +35,13 @@ ip = ipAddrs[0].decode("utf-8")
 
 # Schema for ESP8266 sensor data
 ESP8266_sensor_data_schema = {
-    "required": ["temp", "rel_hum", "lux", "moi_ana", "moi_percent"],
+    "required": ["temp", "rel_hum", "lux", "moi_ana"],
     "properties": {
+        "sensor_num": {"type": 'string'},
         "temp": {"type": 'string'},
         "rel_hum" : {"type": 'string'},
         "lux": {"type": 'string'},
         "moi_ana": {"type": 'string'},
-        "moi_percent": {"type": 'string'},
-        "sensor_num": {"type": 'string'}
     },
     "validationLevel": "strict",
     "validationAction": "error"
@@ -66,10 +65,11 @@ def recieve_device_info():
     if request.method == "POST":
         data = request.json
         print(f'Device {data["dev_name"]} connected via {data["session_ip"]} at: {datetime.now()}')
-        return f'Connection OK!', 200
+        # TODO: Add an entry to device detected db
+        return 'Connection OK!', 200
 
 
-@app.route('/tock', methods=['POST'])
+@app.route('/sensor_data', methods=['POST', 'GET', 'DELETE'])
 @schema.validate(ESP8266_sensor_data_schema)
 def handle_json():
     pass

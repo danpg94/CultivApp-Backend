@@ -1,15 +1,18 @@
 import network
 import socket
 import utime
-import json
+import ujson as json
 import ahtx0
 from machine import Pin, SoftI2C, ADC
 from bh1750 import BH1750
 
 import urequests as request
 
-ssid = 'TP-Link_5AEA'
-pswd = '55329484'
+#ssid = 'TP-Link_5AEA'
+ssid = 'IZZI-37B9'
+#pswd = '55329484'
+pswd = '98F781F737B9'
+
 esp_board_name = 'ESP8266_1'
 
 HTTP_HEADERS = {'Content-Type': 'application/json'}
@@ -37,10 +40,12 @@ def do_connect():
     data['dev_name'] = esp_board_name
     data['session_ip'] = wlan.ipconfig('addr4')
     
-    send_dev_name = False
+    # send_dev_name = False
+    send_dev_name = True
     while not (send_dev_name):
         try:
-            response = request.post(url='http://192.168.0.101:2000/device', json = data, headers = HTTP_HEADERS)
+            # response = request.post(url='http://192.168.0.101:2000/device', json = data, headers = HTTP_HEADERS)
+            response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
             if response.status_code == 200:
                 print(response.text)
                 send_dev_name = True
@@ -87,10 +92,16 @@ def get_sensor_data(mux_select):
 def handle_request(client_socket):
     request = client_socket.recv(1024).decode()
     print('Request:', request)
-
+    header_end = request.find("\r\n\r\n")
+    if header_end != -1:
+        json_payload_bytes = request[header_end + 4:]
+    else:
+        json_payload_bytes = request
     # Simple routing based on URL path
-    if 'GET /data' in request:
-        data_to_send = get_sensor_data(2)
+    if 'POST /data' in request:
+        json_data_recieved = json.loads(json_payload_bytes)
+        print(json_data_recieved)
+        data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
         json_string = json.dumps(data_to_send)
         response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
     else:
