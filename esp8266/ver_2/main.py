@@ -15,6 +15,9 @@ pswd = '98F781F737B9'
 
 esp_board_name = 'ESP8266_1'
 
+onboard_led = Pin(2, Pin.OUT)
+onboard_led.value(0)
+
 HTTP_HEADERS = {'Content-Type': 'application/json'}
 
 i2c = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
@@ -40,17 +43,21 @@ def do_connect():
     data['dev_name'] = esp_board_name
     data['session_ip'] = wlan.ipconfig('addr4')
     
-    # send_dev_name = False
-    send_dev_name = True
+    send_dev_name = False
+    # send_dev_name = True
     while not (send_dev_name):
         try:
             # response = request.post(url='http://192.168.0.101:2000/device', json = data, headers = HTTP_HEADERS)
+            
             response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
             if response.status_code == 200:
                 print(response.text)
                 send_dev_name = True
         except:
             print('Error connecting: retrying in 10 s')
+            onboard_led.value(0)
+            utime.sleep(0.4)
+            onboard_led.value(1)
             utime.sleep(10)
 
 def setup_socket():
@@ -115,6 +122,8 @@ do_connect()
 listening_socket = setup_socket()
 
 while True:
+    onboard_led.value(1)
     conn, addr = listening_socket.accept()
+    onboard_led.value(0)
     print('Got a connection from %s:%d' % (addr[0], addr[1]))
     handle_request(conn)
