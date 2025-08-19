@@ -4,12 +4,19 @@
 import subprocess
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask import Flask, request, jsonify
+from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import time
+
+import pycurl
+from io import BytesIO
+import json
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure
+
+scheduler = BackgroundScheduler()
 
 app = Flask(__name__)
 schema = JsonSchema(app)
@@ -51,6 +58,41 @@ ESP8266_sensor_data_schema = {
 # ip = '192.168.0.7' # Home IP 
 # ip = '192.168.0.103' # Lab IP
 
+def request_job_curl(device_ip, sensor_num):
+    buffer = BytesIO()
+    c = pycurl.Curl()
+    url = f'http://{device_ip}/data/'
+    data = {"sensor_num": sensor_num}
+    json_data = json.dumps(data)
+
+    c.setopt(c.URL, url)
+    c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/json']) # Set content type for JSON
+    c.setopt(c.POSTFIELDS, json_data)
+    c.setopt(c.WRITEFUNCTION, buffer.write)
+
+    c.perform()
+
+    response_body = buffer.getvalue().decode('utf-8')
+    print(response_body)
+
+    c.close()
+
+
+def load_request_jobs():
+    device_ip = '192.168.0.12'
+    sensor_num = '0'
+    job_id = scheduler.add_job(func=request_job_curl, args=[device_ip, sensor_num], trigger="interval", seconds=30)
+    print(job_id)
+
+def start_scheduler():
+    print("\nLoading existing jobs...\n")
+    load_request_jobs()
+    scheduler.start()
+
+@app.teardown_appcontext
+def stop_scheduler(exception=None):
+    scheduler.shutdown()
+
 @app.errorhandler(JsonValidationError)
 def validation_error(e):
     return jsonify({'error': e.message, 'errors': [validation_error.message for validation_error in e.errors]}),406
@@ -76,4 +118,5 @@ def handle_json():
 
 
 if __name__ == '__main__':
+    start_scheduler()
     app.run(debug=True, host=ip, port=2000)
