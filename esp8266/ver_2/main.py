@@ -5,15 +5,16 @@ import ujson as json
 import ahtx0
 from machine import Pin, SoftI2C, ADC
 from bh1750 import BH1750
+import ubinascii
 
 import urequests as request
 
-#ssid = 'TP-Link_5AEA'
-ssid = 'IZZI-37B9'
-#pswd = '55329484'
-pswd = '98F781F737B9'
+ssid = 'TP-Link_5AEA'
+# ssid = 'IZZI-37B9'
+pswd = '55329484'
+# pswd = '98F781F737B9'
 
-esp_board_name = 'ESP8266_1'
+esp_board_name = 'ESP8266'
 
 onboard_led = Pin(2, Pin.OUT)
 onboard_led.value(0)
@@ -39,17 +40,22 @@ def do_connect():
         while not wlan.isconnected():
             pass
     print('network config:', wlan.ipconfig('addr4'))
+    # Get the raw MAC address as a bytes object
+    mac_bytes = wlan.config('mac')
+    # Convert the bytes object to a hexadecimal string and format it with colons
+    mac_address = ubinascii.hexlify(mac_bytes, ':').decode().upper()
     data = dict()
     data['dev_name'] = esp_board_name
-    data['session_ip'] = wlan.ipconfig('addr4')
+    data['dev_mac_addr'] = mac_address
+    data['session_ip'] = wlan.ipconfig('addr4')[0]
     
     send_dev_name = False
     # send_dev_name = True
     while not (send_dev_name):
         try:
-            # response = request.post(url='http://192.168.0.101:2000/device', json = data, headers = HTTP_HEADERS)
+            response = request.post(url='http://192.168.0.105:2000/device', json = data, headers = HTTP_HEADERS)
             
-            response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
+            # response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
             if response.status_code == 200:
                 print(response.text)
                 send_dev_name = True
