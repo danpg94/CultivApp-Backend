@@ -113,6 +113,11 @@ def handle_request(client_socket):
             data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
             json_string = json.dumps(data_to_send)
             response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
+        elif 'GET /ping' in request:
+            data = dict()
+            data['status'] = 'OK'
+            json_string = json.dumps(data)
+            response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
         else:
             response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
     except Exception as e:
