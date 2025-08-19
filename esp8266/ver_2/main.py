@@ -97,22 +97,26 @@ def get_sensor_data(mux_select):
     return data
 
 def handle_request(client_socket):
-    request = client_socket.recv(1024).decode()
-    print('Request:', request)
-    header_end = request.find("\r\n\r\n")
-    if header_end != -1:
-        json_payload_bytes = request[header_end + 4:]
-    else:
-        json_payload_bytes = request
-    # Simple routing based on URL path
-    if 'POST /data' in request:
-        json_data_recieved = json.loads(json_payload_bytes)
-        print(json_data_recieved)
-        data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
-        json_string = json.dumps(data_to_send)
-        response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
-    else:
-        response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
+    try:
+        request = client_socket.recv(1024).decode()
+        print('Request:', request)
+        header_end = request.find("\r\n\r\n")
+        if header_end != -1:
+            json_payload_bytes = request[header_end + 4:]
+        else:
+            json_payload_bytes = request
+        # Simple routing based on URL path
+        print(f"Payload Bytes: {len(json_payload_bytes)}\n")
+        if 'POST /data' in request:
+            json_data_recieved = json.loads(json_payload_bytes)
+            print(json_data_recieved)
+            data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
+            json_string = json.dumps(data_to_send)
+            response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
+        else:
+            response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
+    except Exception as e:
+        response = f'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nError: {type(e)}, {e} \n'.encode()
     print(response)
     client_socket.send(response)
     client_socket.close()
@@ -125,5 +129,5 @@ while True:
     onboard_led.value(1)
     conn, addr = listening_socket.accept()
     onboard_led.value(0)
-    print('Got a connection from %s:%d' % (addr[0], addr[1]))
+    print('Got a connection from %s:%d \n' % (addr[0], addr[1]))
     handle_request(conn)
