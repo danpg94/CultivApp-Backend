@@ -22,18 +22,18 @@ app = Flask(__name__)
 schema = JsonSchema(app)
 
 # # Attempt to connect to local Mongo database
-# try:
-#     client = MongoClient("mongodb://dan:test@0.0.0.0:27017", server_api=ServerApi('1'))
-#     client.admin.command('ping')
-# except ConnectionFailure as e:
-#     print(f"Could not connect to mongoDB database {e}")
+try:
+    client = MongoClient("mongodb://dan:test@0.0.0.0:27017", server_api=ServerApi('1'))
+    client.admin.command('ping')
+except ConnectionFailure as e:
+    print(f"Could not connect to mongoDB database {e}")
 
-# # Define database or create database if not exists
+# Define database or create database if not exists
 
-# plant_db = client["ver_2bd"]
+plant_db = client["ver_2bd"]
 
-# plant_collection = plant_db["esp8266_sensor_data"]
-# device_collection = plant_db["device_lists"]
+plant_collection = plant_db["esp8266_sensor_data"]
+device_collection = plant_db["device_lists"]
 
 # Get current assigned IP using hostname command on Linux
 y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
@@ -54,28 +54,27 @@ ESP8266_sensor_data_schema = {
     "validationAction": "error"
 }
 
-# Change to the IP of device running this app
-# ip = '192.168.0.7' # Home IP 
-# ip = '192.168.0.103' # Lab IP
-
 def request_job_curl(device_ip, sensor_num):
-    buffer = BytesIO()
-    c = pycurl.Curl()
-    url = f'http://{device_ip}/data/'
-    data = {"sensor_num": sensor_num}
-    json_data = json.dumps(data)
+    try:
+        buffer = BytesIO()
+        c = pycurl.Curl()
+        url = f'http://{device_ip}/data/'
+        data = {"sensor_num": sensor_num}
+        json_data = json.dumps(data)
 
-    c.setopt(c.URL, url)
-    c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/json']) # Set content type for JSON
-    c.setopt(c.POSTFIELDS, json_data)
-    c.setopt(c.WRITEFUNCTION, buffer.write)
+        c.setopt(c.URL, url)
+        c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/json']) # Set content type for JSON
+        c.setopt(c.POSTFIELDS, json_data)
+        c.setopt(c.WRITEFUNCTION, buffer.write)
 
-    c.perform()
+        c.perform()
 
-    response_body = buffer.getvalue().decode('utf-8')
-    print(response_body)
-
-    c.close()
+        response_body = buffer.getvalue().decode('utf-8')
+        print(response_body)
+        c.close()
+    except pycurl.error as e:
+        print(f'[ERROR] Could not connect to device pycurl: {e}')
+        c.close()
 
 
 def load_request_jobs():
@@ -108,6 +107,16 @@ def recieve_device_info():
         data = request.json
         print(f'Device {data["dev_name"]} connected via {data["session_ip"]} at: {datetime.now()}')
         # TODO: Add an entry to device detected db
+        
+        device_entry = device_collection.find_one({"name": data["dev_name"]})
+        print(f'Device entry: {device_entry}')
+        if device_entry == None:
+            print(f'[NEW DEVICE] New Device detected for: {data["dev_name"]} ')
+            device_collection.insert_one({"name": data["dev_name"], "latest_ip": data["session_ip"]})
+        else:
+            print(f'[UPDATE] New ip detected for: {data["dev_name"]} ')
+            device_collection.update_one({"name": data["dev_name"]}, {"$set": {"name": data["dev_name"], "latest_ip": data["session_ip"]}})
+            
         return 'Connection OK!', 200
 
 
