@@ -71,7 +71,7 @@ ESP8266_sensor_data_schema = {
     "validationAction": "error"
 }
 
-def request_job_curl(device_ip, sensor_num):
+def curl_post_device(device_ip, sensor_num):
     try:
         buffer = BytesIO()
         c = pycurl.Curl()
@@ -93,16 +93,45 @@ def request_job_curl(device_ip, sensor_num):
         print(f'[ERROR] Could not connect to device pycurl: {e}')
         c.close()
 
+def curl_ping_device(device_ip):
+    try:
+        buffer = BytesIO()
+        c = pycurl.Curl()
+        url = f'http://{device_ip}/ping/'
 
-def load_request_jobs():
-    device_ip = '192.168.0.12'
+        c.setopt(c.URL, url)
+        c.setopt(c.WRITEDATA, buffer)
+        c.perform()
+
+        response_body = buffer.getvalue().decode('utf-8')
+        # print(response_body)
+
+        c.close()
+        return True
+    except pycurl.error as e:
+        print(f'[ERROR] Could not connect to device pycurl: {e}')
+        c.close()
+        return False
+
+def load_request_jobs(devices_entry):
     sensor_num = '0'
-    job_id = scheduler.add_job(func=request_job_curl, args=[device_ip, sensor_num], trigger="interval", seconds=60)
-    print(job_id)
+    for device in devices_entry:
+        print(f'[LOG] Pinging {device["name"]} on {device["latest_ip"][0]}')
+        if curl_ping_device(device['latest_ip'][0]):
+            job_id = scheduler.add_job(func=curl_post_device, args=[device['latest_ip'][0], sensor_num], trigger="interval", seconds=60)
+            print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
+        else:
+            print(f'[WARING] Ping unsuccessful, ignoring')
 
 def start_scheduler():
+
     print("\nLoading existing jobs...\n")
-    load_request_jobs()
+    devices_entry = list(device_collection.find())
+    if len(devices_entry) != 0:
+        print(f'[LOG] Found {len(devices_entry)} devices!')
+        load_request_jobs(devices_entry)
+    else:
+        print("[LOG] There are no device entries en the database")
     scheduler.start()
 
 @app.teardown_appcontext
