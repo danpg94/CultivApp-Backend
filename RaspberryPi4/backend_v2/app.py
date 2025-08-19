@@ -27,13 +27,13 @@ MONGO_DB_LOCAL_PORT = os.environ.get("MONGO_DB_LOCAL_PORT")
 # URI for the cluster. Remember to have an .env file with user, password and DB name for the local Mongo DB instance
 uri = f"mongodb://{MONGO_DB_LOCAL_USER}:{MONGO_DB_LOCAL_PWD}@{MONGO_DB_LOCAL_IP}:{MONGO_DB_LOCAL_PORT}"
 
-print(uri)
 scheduler = BackgroundScheduler()
 
 app = Flask(__name__)
 schema = JsonSchema(app)
 
 # # Attempt to connect to local Mongo database
+print(f'[LOG] Attempting to connect to MongoDB on {uri}')
 try:
     client = MongoClient(uri,
                          server_api=ServerApi('1'),
@@ -87,7 +87,7 @@ def curl_post_device(device_ip, sensor_num):
         c.perform()
 
         response_body = buffer.getvalue().decode('utf-8')
-        print(response_body)
+        print(f'[ OK ] Recieved response from {device_ip}: {response_body}')
         c.close()
     except pycurl.error as e:
         print(f'[ERROR] Could not connect to device pycurl: {e}')
@@ -116,16 +116,16 @@ def curl_ping_device(device_ip):
 def load_request_jobs(devices_entry):
     sensor_num = '0'
     for device in devices_entry:
-        print(f'[LOG] Pinging {device["name"]} on {device["latest_ip"][0]}')
-        if curl_ping_device(device['latest_ip'][0]):
-            job_id = scheduler.add_job(func=curl_post_device, args=[device['latest_ip'][0], sensor_num], trigger="interval", seconds=60)
+        print(f'[LOG] Pinging {device["name"]} on {device["latest_ip"]}')
+        if curl_ping_device(device['latest_ip']):
+            job_id = scheduler.add_job(func=curl_post_device, args=[device['latest_ip'], sensor_num], trigger="interval", seconds=10)
             print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
         else:
             print(f'[WARING] Ping unsuccessful, ignoring')
 
 def start_scheduler():
 
-    print("\nLoading existing jobs...\n")
+    print("\n[LOG] Attempting to look for devices in DB ...\n")
     devices_entry = list(device_collection.find())
     if len(devices_entry) != 0:
         print(f'[LOG] Found {len(devices_entry)} devices!')
@@ -151,17 +151,18 @@ def index():
 def recieve_device_info():
     if request.method == "POST":
         data = request.json
-        print(f'Device {data["dev_name"]} connected via {data["session_ip"]} at: {datetime.now()}')
-        # TODO: Add an entry to device detected db
-        
-        device_entry = device_collection.find_one({"name": data["dev_name"]})
-        print(f'Device entry: {device_entry}')
+        print(f'[LOG] Device {data["dev_name"]} with MAC {data["dev_mac_addr"]} connected via {data["session_ip"]} at: {datetime.now()}')
+        device_entry = device_collection.find_one({"mac": data["dev_mac_addr"]})
+        print(f'[LOG] Device entry: {device_entry}')
         if device_entry == None:
-            print(f'[NEW DEVICE] New Device detected for: {data["dev_name"]} ')
-            device_collection.insert_one({"name": data["dev_name"], "latest_ip": data["session_ip"]})
+            print(f'[NEW DEVICE] New {data["dev_name"]} Device detected with MAC: {data["dev_mac_addr"]} on {data["session_ip"]}')
+            device_collection.insert_one({"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"]})
         else:
-            print(f'[UPDATE] New ip detected for: {data["dev_name"]} ')
-            device_collection.update_one({"name": data["dev_name"]}, {"$set": {"name": data["dev_name"], "latest_ip": data["session_ip"]}})
+            if data['session_ip'] == device_entry['latest_ip']:
+                print(f'[ OK ] Connecting {data["dev_name"]} device to {data["dev_mac_addr"]} on {data["session_ip"]}')
+            else:
+                print(f'[UPDATE] New ip detected for {data["dev_name"]} with MAC: {data["dev_mac_addr"]} on  {data["session_ip"]}. Previous was {device_entry["latest_ip"]}')
+                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"]}})
             
         return 'Connection OK!', 200
 
