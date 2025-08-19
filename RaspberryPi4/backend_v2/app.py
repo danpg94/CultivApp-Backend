@@ -1,12 +1,12 @@
-#Simple Flask test program
-# connect to 
-
 import subprocess
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask import Flask, request, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
+
 import time
+import os
+from dotenv import load_dotenv, find_dotenv
 
 import pycurl
 from io import BytesIO
@@ -16,6 +16,18 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure
 
+
+load_dotenv(find_dotenv())
+
+MONGO_DB_LOCAL_USER = os.environ.get("MONGO_DB_LOCAL_USER")
+MONGO_DB_LOCAL_PWD = os.environ.get("MONGO_DB_LOCAL_PWD")
+MONGO_DB_LOCAL_IP = os.environ.get("MONGO_DB_LOCAL_IP")
+MONGO_DB_LOCAL_PORT = os.environ.get("MONGO_DB_LOCAL_PORT")
+
+# URI for the cluster. Remember to have an .env file with user, password and DB name for the local Mongo DB instance
+uri = f"mongodb://{MONGO_DB_LOCAL_USER}:{MONGO_DB_LOCAL_PWD}@{MONGO_DB_LOCAL_IP}:{MONGO_DB_LOCAL_PORT}"
+
+print(uri)
 scheduler = BackgroundScheduler()
 
 app = Flask(__name__)
@@ -23,15 +35,20 @@ schema = JsonSchema(app)
 
 # # Attempt to connect to local Mongo database
 try:
-    client = MongoClient("mongodb://dan:test@0.0.0.0:27017", server_api=ServerApi('1'))
+    client = MongoClient(uri,
+                         server_api=ServerApi('1'),
+                         serverSelectionTimeoutMS=5000,
+                         connectTimeoutMS=5000,
+                         socketTimeoutMS=5000)
     client.admin.command('ping')
 except ConnectionFailure as e:
-    print(f"Could not connect to mongoDB database {e}")
+    print(f"[ERROR] Could not connect to mongoDB database {e}")
 
 # Define database or create database if not exists
 
 plant_db = client["ver_2bd"]
 
+# Define collection or create collection if not exists
 plant_collection = plant_db["esp8266_sensor_data"]
 device_collection = plant_db["device_lists"]
 
@@ -80,7 +97,7 @@ def request_job_curl(device_ip, sensor_num):
 def load_request_jobs():
     device_ip = '192.168.0.12'
     sensor_num = '0'
-    job_id = scheduler.add_job(func=request_job_curl, args=[device_ip, sensor_num], trigger="interval", seconds=30)
+    job_id = scheduler.add_job(func=request_job_curl, args=[device_ip, sensor_num], trigger="interval", seconds=60)
     print(job_id)
 
 def start_scheduler():
