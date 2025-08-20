@@ -150,18 +150,18 @@ def index():
 def recieve_device_info():
     if request.method == "POST":
         data = request.json
-        print(f'[LOG] Device {data["dev_name"]} with MAC {data["dev_mac_addr"]} connected via {data["session_ip"]} at: {datetime.now()}')
+        print(f'[LOG] Device {data["dev_type"]} with MAC {data["dev_mac_addr"]} connected via {data["session_ip"]} at: {datetime.now()}')
         device_entry = device_collection.find_one({"mac": data["dev_mac_addr"]})
         print(f'[DEBUG] [LOG] Device entry: {device_entry}')
         if device_entry == None:
-            print(f'[NEW DEVICE] New {data["dev_name"]} Device detected with MAC: {data["dev_mac_addr"]} on {data["session_ip"]}')
-            device_collection.insert_one({"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"], "sensor_list": data["sensors_detected"]})
+            print(f'[NEW DEVICE] New {data["dev_type"]} Device detected with MAC: {data["dev_mac_addr"]} on {data["session_ip"]}')
+            device_collection.insert_one({"name": data["dev_type"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"], "sensor_list": data["sensors_detected"]})
         else:
             if data['session_ip'] == device_entry['latest_ip']:
-                print(f'[ OK ] Connecting {data["dev_name"]} device to {data["dev_mac_addr"]} on {data["session_ip"]}')
+                print(f'[ OK ] Connecting {data["dev_type"]} device to {data["dev_mac_addr"]} on {data["session_ip"]}')
             else:
-                print(f'[UPDATE] New ip detected for {data["dev_name"]} with MAC: {data["dev_mac_addr"]} on  {data["session_ip"]}. Previous was {device_entry["latest_ip"]}')
-                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"] , "sensor_list": data["sensors_detected"]}})
+                print(f'[UPDATE] New ip detected for {data["dev_type"]} with MAC: {data["dev_mac_addr"]} on  {data["session_ip"]}. Previous was {device_entry["latest_ip"]}')
+                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_type"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"] , "sensor_list": data["sensors_detected"]}})
             
         return 'Connection OK!', 200
 
