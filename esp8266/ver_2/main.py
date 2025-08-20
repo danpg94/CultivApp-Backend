@@ -6,29 +6,41 @@ import ahtx0
 from machine import Pin, SoftI2C, ADC
 from bh1750 import BH1750
 import ubinascii
-
 import urequests as request
 
+####### Global Variables #######
 ssid = 'TP-Link_5AEA'
 # ssid = 'IZZI-37B9'
 pswd = '55329484'
 # pswd = '98F781F737B9'
-
 MAX_HUM_SENSORS = 8
-
 device_board_type = 'ESP8266'
-
 server_url = 'http://192.168.0.105:2000/device'
 # server_url = 'http://192.168.0.6:2000/device'
 
+######## Board Configuration #######
 onboard_led = Pin(2, Pin.OUT)
 onboard_led.value(0)
 
-HTTP_HEADERS = {'Content-Type': 'application/json'}
-
 i2c = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
-temp_sensor = ahtx0.AHT10(i2c)
-light_sensor = BH1750(bus=i2c, addr=0x23)
+
+AHT10_enabled = True
+BH1750_enabled = True
+try:
+    temp_sensor = ahtx0.AHT10(i2c)
+except OSError:
+    print(f'[WARNING] AHT10 Sensor not detected!')
+    AHT10_enabled = False
+
+if AHT10_enabled: print(f'[ OK ] AHT10 Sensor detected')
+
+try:
+    light_sensor = BH1750(bus=i2c, addr=0x23)
+except OSError:
+    print(f'[WARNING] BH1750 Sensor not detected!')
+    BH1750_enabled = False
+
+if BH1750_enabled: print(f'[ OK ] BH1750 Sensor detected')
 
 adc = ADC(0)
 
@@ -61,7 +73,7 @@ def do_connect():
         utime.sleep(5)
         print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
-            response = request.post(url=f'{server_url}', json = data, headers = HTTP_HEADERS)
+            response = request.post(url=f'{server_url}', json = data, headers = {'Content-Type': 'application/json'})
             if response.status_code == 200:
                 print(f'[ OK ] Response from server: {response.text}')
                 send_dev_name = True
@@ -88,7 +100,7 @@ def setMultiplexerPins(a, b, c):
     pinC.value(c)
 
 def check_sensors():
-    print('[LOG] Checking hummidity sensors:')
+    print('[ LOG ] Checking hummidity sensors:')
     sensors = dict()
     for i in range(0,MAX_HUM_SENSORS):
         args = list("{0:03b}".format(i)) 
@@ -104,13 +116,26 @@ def check_sensors():
 
 def get_sensor_data(mux_select):
     data = dict()
-    lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
-    temp = temp_sensor.temperature
-    rel_hum = temp_sensor.relative_humidity
+
+    if BH1750_enabled:
+        lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
+        data['lux'] = str("{:.2f}".format(lux))
+    else:
+        data['lux'] = "N/A"
+
+    if AHT10_enabled:
+        temp = temp_sensor.temperature
+        rel_hum = temp_sensor.relative_humidity
+        data['temp'] = str("{:.2f}".format(temp))
+        data['rel_hum'] = str("{:.2f}".format(rel_hum))
+    else:
+        data['temp'] = "N/A"
+        data['rel_hum'] = "N/A"
+
     args = list("{0:03b}".format(mux_select)) # Convert sensor number to binary in order to set sensor input of multiplexer
     setMultiplexerPins(int(args[2]), int(args[1]), int(args[0]))
     sensorAnalog = adc.read()
-    
+
     #print("\nSensor Number: {}".format(mux_select))
     #print("Temperature: {:.2f} C".format(temp))
     #print("Humidity: {:.2f}".format(rel_hum))
@@ -118,9 +143,6 @@ def get_sensor_data(mux_select):
     #print("Soil Moisture ADC Value: {:.2f}".format(sensorAnalog))
     
     data['sensor_num'] = str(mux_select)
-    data['temp'] = str("{:.2f}".format(temp_sensor.temperature))
-    data['rel_hum'] = str("{:.2f}".format(temp_sensor.relative_humidity))
-    data['lux'] = str("{:.2f}".format(lux))
     data['moi_ana'] = str("{:.2f}".format(sensorAnalog))
     return data
 
