@@ -161,3 +161,6 @@ cython_debug/
 
 # Flet
 storage/
+
+# Private Variables for ESP8266
+esp8266/*/private_variables.py

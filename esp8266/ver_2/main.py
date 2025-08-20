@@ -7,16 +7,14 @@ from machine import Pin, SoftI2C, ADC
 from bh1750 import BH1750
 import ubinascii
 import urequests as request
+from private_variables import ssid_priv, pswd_priv, server_url_priv # Remember to have a file with the sensitive data loaded in the device 
 
 ####### Global Variables #######
-ssid = 'TP-Link_5AEA'
-# ssid = 'IZZI-37B9'
-pswd = '55329484'
-# pswd = '98F781F737B9'
+ssid = ssid_priv
+pswd = pswd_priv
 MAX_HUM_SENSORS = 8
 device_board_type = 'ESP8266'
-server_url = 'http://192.168.0.105:2000/device'
-# server_url = 'http://192.168.0.6:2000/device'
+server_url = server_url_priv
 
 ######## Board Configuration #######
 onboard_led = Pin(2, Pin.OUT)
