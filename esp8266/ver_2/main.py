@@ -16,7 +16,7 @@ pswd = '55329484'
 
 MAX_HUM_SENSORS = 8
 
-esp_board_name = 'ESP8266'
+device_board_type = 'ESP8266'
 
 server_url = 'http://192.168.0.105:2000/device'
 # server_url = 'http://192.168.0.6:2000/device'
@@ -50,7 +50,7 @@ def do_connect():
     # Convert the bytes object to a hexadecimal string and format it with colons
     mac_address = ubinascii.hexlify(mac_bytes, ':').decode().upper()
     data = dict()
-    data['dev_name'] = esp_board_name
+    data['dev_type'] = device_board_type
     data['dev_mac_addr'] = mac_address
     data['session_ip'] = wlan.ipconfig('addr4')[0]
     data['sensors_detected'] = check_sensors()
