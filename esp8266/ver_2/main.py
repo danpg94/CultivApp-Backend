@@ -14,6 +14,8 @@ ssid = 'TP-Link_5AEA'
 pswd = '55329484'
 # pswd = '98F781F737B9'
 
+MAX_HUM_SENSORS = 8
+
 esp_board_name = 'ESP8266'
 
 server_url = 'http://192.168.0.105:2000/device'
@@ -51,10 +53,12 @@ def do_connect():
     data['dev_name'] = esp_board_name
     data['dev_mac_addr'] = mac_address
     data['session_ip'] = wlan.ipconfig('addr4')[0]
-    
+    data['sensors_detected'] = check_sensors()
+
     send_dev_name = False
     # send_dev_name = True
     while not (send_dev_name):
+        utime.sleep(5)
         print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
             response = request.post(url=f'{server_url}', json = data, headers = HTTP_HEADERS)
@@ -82,6 +86,21 @@ def setMultiplexerPins(a, b, c):
     pinA.value(a)
     pinB.value(b)
     pinC.value(c)
+
+def check_sensors():
+    print('[LOG] Checking hummidity sensors:')
+    sensors = dict()
+    for i in range(0,MAX_HUM_SENSORS):
+        args = list("{0:03b}".format(i)) 
+        setMultiplexerPins(int(args[2]), int(args[1]), int(args[0]))
+        sensorAnalog = adc.read()
+        if sensorAnalog > 50:
+            print(f'\tSensor{i}: OK')
+            sensors[i]=True
+        else:
+            print(f'\tSensor{i}: NOT CONNECTED')
+            sensors[i]=False
+    return sensors
 
 def get_sensor_data(mux_select):
     data = dict()
@@ -147,5 +166,5 @@ while True:
     onboard_led.value(1)
     conn, addr = listening_socket.accept()
     onboard_led.value(0)
-    print(f'[ LOG ] Got a connection from {addr[0]}:{addr[1]} \n')
+    print(f'[ LOG ] Got a connection from {addr[0]}:{addr[1]}')
     handle_request(conn)
