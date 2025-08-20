@@ -9,7 +9,7 @@ import ubinascii
 import urequests as request
 from private_variables import ssid_priv, pswd_priv, server_url_priv # Remember to have a file with the sensitive data loaded in the device 
 
-####### Global Variables #######
+######## Global Variables ########
 ssid = ssid_priv
 pswd = pswd_priv
 MAX_HUM_SENSORS = 8
@@ -24,21 +24,15 @@ i2c = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
 
 AHT10_enabled = True
 BH1750_enabled = True
+
 try:
     temp_sensor = ahtx0.AHT10(i2c)
 except OSError:
-    print(f'[WARNING] AHT10 Sensor not detected!')
     AHT10_enabled = False
-
-if AHT10_enabled: print(f'[ OK ] AHT10 Sensor detected')
-
 try:
     light_sensor = BH1750(bus=i2c, addr=0x23)
 except OSError:
-    print(f'[WARNING] BH1750 Sensor not detected!')
     BH1750_enabled = False
-
-if BH1750_enabled: print(f'[ OK ] BH1750 Sensor detected')
 
 adc = ADC(0)
 
@@ -46,7 +40,8 @@ pinA = Pin(12, Pin.OUT)
 pinB = Pin(13, Pin.OUT)
 pinC = Pin(14, Pin.OUT)
 
-def do_connect():
+######## Functions ########
+def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if not wlan.isconnected():
@@ -54,33 +49,72 @@ def do_connect():
         wlan.connect(ssid, pswd)
         while not wlan.isconnected():
             pass
-    print('[ LOG ] Connection Successful! Network config:', wlan.ipconfig('addr4'))
+    assigned_ip = wlan.ipconfig('addr4')[0]
+    print('[ LOG ] Connection Successful! Network config:', {assigned_ip})
     # Get the raw MAC address as a bytes object
     mac_bytes = wlan.config('mac')
     # Convert the bytes object to a hexadecimal string and format it with colons
     mac_address = ubinascii.hexlify(mac_bytes, ':').decode().upper()
+    
+    return assigned_ip, mac_address
+
+def health_check(assigned_ip, mac_address):
     data = dict()
     data['dev_type'] = device_board_type
     data['dev_mac_addr'] = mac_address
-    data['session_ip'] = wlan.ipconfig('addr4')[0]
+    data['session_ip'] = assigned_ip
     data['sensors_detected'] = check_sensors()
 
-    send_dev_name = False
-    # send_dev_name = True
-    while not (send_dev_name):
+    send_health_check = False
+    # send_health_check = True
+    # [TODO]: Move connection to server to a different function
+    while not (send_health_check):
         utime.sleep(5)
         print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
             response = request.post(url=f'{server_url}', json = data, headers = {'Content-Type': 'application/json'})
             if response.status_code == 200:
                 print(f'[ OK ] Response from server: {response.text}')
-                send_dev_name = True
+                send_health_check = True
         except:
             print(f'[ ERROR ] Error connecting to server: retrying in 10 s')
             onboard_led.value(0)
             utime.sleep(0.4)
             onboard_led.value(1)
             utime.sleep(10)
+
+def setMultiplexerPins(a, b, c):
+    pinA.value(a)
+    pinB.value(b)
+    pinC.value(c)
+
+def check_sensors():
+    print('[ LOG ] Checking sensors:')
+    sensors = dict()
+    sensors['temp_hum_sens'] = AHT10_enabled
+    if AHT10_enabled:
+        print(f'[ OK ] AHT10 Sensor detected')
+    else:
+        print(f'[WARN] AHT10 Sensor not detected!')
+    
+    sensors['light_sens'] = BH1750_enabled
+    if BH1750_enabled:
+        print(f'[ OK ] BH1750 Sensor detected')
+    else:
+        print(f'[WARN] BH1750 Sensor not detected!')
+
+    print(f'[LOG] Soil Sensor Check:')
+    for i in range(0,MAX_HUM_SENSORS):
+        args = list("{0:03b}".format(i)) 
+        setMultiplexerPins(int(args[2]), int(args[1]), int(args[0]))
+        sensorAnalog = adc.read()
+        if sensorAnalog > 50:
+            print(f'\t[ OK ] Sensor{i}: OK')
+            sensors[f'soil_sens_{i}']=True
+        else:
+            print(f'\t[WARN] Sensor{i}: NOT CONNECTED')
+            sensors[f'soil_sens_{i}']=False
+    return sensors
 
 def setup_socket():
     # Create a socket and bind it to port 80
@@ -92,35 +126,19 @@ def setup_socket():
     print(f'[ OK ] Listening on: {addr}')
     return s
 
-def setMultiplexerPins(a, b, c):
-    pinA.value(a)
-    pinB.value(b)
-    pinC.value(c)
 
-def check_sensors():
-    print('[ LOG ] Checking hummidity sensors:')
-    sensors = dict()
-    for i in range(0,MAX_HUM_SENSORS):
-        args = list("{0:03b}".format(i)) 
-        setMultiplexerPins(int(args[2]), int(args[1]), int(args[0]))
-        sensorAnalog = adc.read()
-        if sensorAnalog > 50:
-            print(f'\tSensor{i}: OK')
-            sensors[i]=True
-        else:
-            print(f'\tSensor{i}: NOT CONNECTED')
-            sensors[i]=False
-    return sensors
 
 def get_sensor_data(mux_select):
     data = dict()
 
+    # [TODO]: Add better handling of errors if a sensor disconnects after boot and implement a health_check call
     if BH1750_enabled:
         lux = light_sensor.luminance(BH1750.CONT_HIRES_1)
         data['lux'] = str("{:.2f}".format(lux))
     else:
         data['lux'] = "N/A"
 
+    # [TODO]: Add better handling of errors if a sensor disconnects after boot and implement a health_check call
     if AHT10_enabled:
         temp = temp_sensor.temperature
         rel_hum = temp_sensor.relative_humidity
@@ -169,7 +187,7 @@ def handle_request(client_socket):
             print(f'[ OK ] Recieved PING request from server')
             response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
         else:
-            print(f'[WARNING] Request not supported. Returning 404')
+            print(f'[WARN] Request not supported. Returning 404')
             response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
     except Exception as e:
         print(f'[ERROR] An unexpected error occured. Type: {type(e)} Error:{e}')
@@ -179,7 +197,11 @@ def handle_request(client_socket):
     client_socket.close()
 
 
-do_connect()
+
+
+###### Main "Function" ######
+assigned_ip, mac_address = connect_wifi()
+health_check(assigned_ip, mac_address)
 listening_socket = setup_socket()
 
 while True:
