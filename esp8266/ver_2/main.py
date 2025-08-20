@@ -16,6 +16,9 @@ pswd = '55329484'
 
 esp_board_name = 'ESP8266'
 
+server_url = 'http://192.168.0.105:2000/device'
+# server_url = 'http://192.168.0.6:2000/device'
+
 onboard_led = Pin(2, Pin.OUT)
 onboard_led.value(0)
 
@@ -35,11 +38,11 @@ def do_connect():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if not wlan.isconnected():
-        print('connecting to network...')
+        print(f'[ LOG ] Attemptinng to connect to network {ssid}...')
         wlan.connect(ssid, pswd)
         while not wlan.isconnected():
             pass
-    print('network config:', wlan.ipconfig('addr4'))
+    print('[ LOG ] Connection Successful! Network config:', wlan.ipconfig('addr4'))
     # Get the raw MAC address as a bytes object
     mac_bytes = wlan.config('mac')
     # Convert the bytes object to a hexadecimal string and format it with colons
@@ -52,15 +55,14 @@ def do_connect():
     send_dev_name = False
     # send_dev_name = True
     while not (send_dev_name):
+        print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
-            response = request.post(url='http://192.168.0.105:2000/device', json = data, headers = HTTP_HEADERS)
-            
-            # response = request.post(url='http://192.168.0.6:2000/device', json = data, headers = HTTP_HEADERS)
+            response = request.post(url=f'{server_url}', json = data, headers = HTTP_HEADERS)
             if response.status_code == 200:
-                print(response.text)
+                print(f'[ OK ] Response from server: {response.text}')
                 send_dev_name = True
         except:
-            print('Error connecting: retrying in 10 s')
+            print(f'[ ERROR ] Error connecting to server: retrying in 10 s')
             onboard_led.value(0)
             utime.sleep(0.4)
             onboard_led.value(1)
@@ -68,11 +70,12 @@ def do_connect():
 
 def setup_socket():
     # Create a socket and bind it to port 80
+    print('[ LOG ] Creating socket')
     addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
     s = socket.socket()
     s.bind(addr)
     s.listen(3) # Max 3 pending connections
-    print('Listening on', addr)
+    print(f'[ OK ] Listening on: {addr}')
     return s
 
 def setMultiplexerPins(a, b, c):
@@ -89,11 +92,11 @@ def get_sensor_data(mux_select):
     setMultiplexerPins(int(args[2]), int(args[1]), int(args[0]))
     sensorAnalog = adc.read()
     
-    print("\nSensor Number: {}".format(mux_select))
-    print("Temperature: {:.2f} C".format(temp))
-    print("Humidity: {:.2f}".format(rel_hum))
-    print("Luminance: {:.2f} lux".format(lux))
-    print("Soil Moisture ADC Value: {:.2f}".format(sensorAnalog))
+    #print("\nSensor Number: {}".format(mux_select))
+    #print("Temperature: {:.2f} C".format(temp))
+    #print("Humidity: {:.2f}".format(rel_hum))
+    #print("Luminance: {:.2f} lux".format(lux))
+    #print("Soil Moisture ADC Value: {:.2f}".format(sensorAnalog))
     
     data['sensor_num'] = str(mux_select)
     data['temp'] = str("{:.2f}".format(temp_sensor.temperature))
@@ -105,30 +108,34 @@ def get_sensor_data(mux_select):
 def handle_request(client_socket):
     try:
         request = client_socket.recv(1024).decode()
-        print('Request:', request)
+        # print('Request:', request)
         header_end = request.find("\r\n\r\n")
         if header_end != -1:
             json_payload_bytes = request[header_end + 4:]
         else:
             json_payload_bytes = request
         # Simple routing based on URL path
-        print(f"Payload Bytes: {len(json_payload_bytes)}\n")
+        # print(f"Payload Bytes: {len(json_payload_bytes)}\n")
         if 'POST /data' in request:
             json_data_recieved = json.loads(json_payload_bytes)
-            print(json_data_recieved)
+            # print(json_data_recieved)
             data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
             json_string = json.dumps(data_to_send)
+            print(f'[ OK ] Sending data to server')
             response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
         elif 'GET /ping' in request:
             data = dict()
             data['status'] = 'OK'
             json_string = json.dumps(data)
+            print(f'[ OK ] Recieved PING request from server')
             response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
         else:
+            print(f'[WARNING] Request not supported. Returning 404')
             response = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nNot Found\n'.encode()
     except Exception as e:
+        print(f'[ERROR] An unexpected error occured. Type: {type(e)} Error:{e}')
         response = f'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nError: {type(e)}, {e} \n'.encode()
-    print(response)
+    print(f'[LOG] Response to server: \n{response}\n')
     client_socket.send(response)
     client_socket.close()
 
@@ -140,5 +147,5 @@ while True:
     onboard_led.value(1)
     conn, addr = listening_socket.accept()
     onboard_led.value(0)
-    print('Got a connection from %s:%d \n' % (addr[0], addr[1]))
+    print(f'[ LOG ] Got a connection from {addr[0]}:{addr[1]} \n')
     handle_request(conn)
