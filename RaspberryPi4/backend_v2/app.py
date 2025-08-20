@@ -50,7 +50,7 @@ plant_db = client["ver_2bd"]
 
 # Define collection or create collection if not exists
 plant_collection = plant_db["esp8266_sensor_data"]
-device_collection = plant_db["device_lists"]
+device_collection = plant_db["devices"]
 
 # Get current assigned IP using hostname command on Linux
 y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
@@ -124,7 +124,7 @@ def load_request_jobs(devices_entry):
             print(f'[WARING] Ping unsuccessful, ignoring')
 
 def start_scheduler():
-
+    scheduler.start()
     print("\n[LOG] Attempting to look for devices in DB ...\n")
     devices_entry = list(device_collection.find())
     if len(devices_entry) != 0:
@@ -132,7 +132,6 @@ def start_scheduler():
         load_request_jobs(devices_entry)
     else:
         print("[LOG] There are no device entries en the database")
-    scheduler.start()
 
 @app.teardown_appcontext
 def stop_scheduler(exception=None):
@@ -153,16 +152,16 @@ def recieve_device_info():
         data = request.json
         print(f'[LOG] Device {data["dev_name"]} with MAC {data["dev_mac_addr"]} connected via {data["session_ip"]} at: {datetime.now()}')
         device_entry = device_collection.find_one({"mac": data["dev_mac_addr"]})
-        print(f'[LOG] Device entry: {device_entry}')
+        print(f'[DEBUG] [LOG] Device entry: {device_entry}')
         if device_entry == None:
             print(f'[NEW DEVICE] New {data["dev_name"]} Device detected with MAC: {data["dev_mac_addr"]} on {data["session_ip"]}')
-            device_collection.insert_one({"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"]})
+            device_collection.insert_one({"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"], "sensor_list": data["sensors_detected"]})
         else:
             if data['session_ip'] == device_entry['latest_ip']:
                 print(f'[ OK ] Connecting {data["dev_name"]} device to {data["dev_mac_addr"]} on {data["session_ip"]}')
             else:
                 print(f'[UPDATE] New ip detected for {data["dev_name"]} with MAC: {data["dev_mac_addr"]} on  {data["session_ip"]}. Previous was {device_entry["latest_ip"]}')
-                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"]}})
+                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_name"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"] , "sensor_list": data["sensors_detected"]}})
             
         return 'Connection OK!', 200
 
@@ -175,4 +174,4 @@ def handle_json():
 
 if __name__ == '__main__':
     start_scheduler()
-    app.run(debug=True, host=ip, port=2000)
+    app.run(debug=False, host=ip, port=2000, use_reloader=False)
