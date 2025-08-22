@@ -1,7 +1,7 @@
 import subprocess
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask import Flask, request, jsonify
-from apscheduler.schedulers.background import BackgroundScheduler
+from flask_apscheduler import APScheduler
 from datetime import datetime
 
 import time
@@ -16,6 +16,9 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure
 
+class APScheduler_Config:
+    SCHEDULER_API_ENABLED = True
+
 
 load_dotenv(find_dotenv())
 
@@ -27,10 +30,11 @@ MONGO_DB_LOCAL_PORT = os.environ.get("MONGO_DB_LOCAL_PORT")
 # URI for the cluster. Remember to have an .env file with user, password and DB name for the local Mongo DB instance
 uri = f"mongodb://{MONGO_DB_LOCAL_USER}:{MONGO_DB_LOCAL_PWD}@{MONGO_DB_LOCAL_IP}:{MONGO_DB_LOCAL_PORT}"
 
-scheduler = BackgroundScheduler()
-
 app = Flask(__name__)
 schema = JsonSchema(app)
+
+scheduler = APScheduler()
+
 
 # # Attempt to connect to local Mongo database
 print(f'[LOG] Attempting to connect to MongoDB on {uri}')
@@ -118,13 +122,12 @@ def load_request_jobs(devices_entry):
     for device in devices_entry:
         print(f'[LOG] Pinging {device["name"]} on {device["latest_ip"]}')
         if curl_ping_device(device['latest_ip']):
-            job_id = scheduler.add_job(func=curl_post_device, args=[device['latest_ip'], sensor_num], trigger="interval", seconds=10)
+            job_id = scheduler.add_job(id='sensor_ping_test_1' ,func=curl_post_device, args=[device['latest_ip'], sensor_num], trigger="interval", seconds=10)
             print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
         else:
             print(f'[WARING] Ping unsuccessful, ignoring')
 
-def start_scheduler():
-    scheduler.start()
+def load_scheduler_jobs_at_startup():
     print("\n[LOG] Attempting to look for devices in DB ...\n")
     devices_entry = list(device_collection.find())
     if len(devices_entry) != 0:
@@ -133,9 +136,10 @@ def start_scheduler():
     else:
         print("[LOG] There are no device entries en the database")
 
-@app.teardown_appcontext
-def stop_scheduler(exception=None):
-    scheduler.shutdown()
+# This causes scheduler shutdown when there is any other call to the app, ex. /scheduler
+# @app.teardown_appcontext
+# def stop_scheduler(exception=None):
+#     scheduler.shutdown()
 
 @app.errorhandler(JsonValidationError)
 def validation_error(e):
@@ -172,6 +176,15 @@ def handle_json():
     pass
 
 
+# interval examples
+@scheduler.task("interval", id="do_job_1", minutes=24, misfire_grace_time=900)
+def job1():
+    """Sample job 1."""
+    print("Job 1 executed")
+
 if __name__ == '__main__':
-    start_scheduler()
+    scheduler.api_enabled = True
+    scheduler.init_app(app)
+    load_scheduler_jobs_at_startup()
+    scheduler.start()
     app.run(debug=False, host=ip, port=2000, use_reloader=False)
