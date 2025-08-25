@@ -6,7 +6,7 @@ import ahtx0
 from machine import Pin, SoftI2C, ADC
 from bh1750 import BH1750
 import ubinascii
-import urequests as request
+import urequests as requests
 from private_variables import ssid_priv, pswd_priv, server_url_priv # Remember to have a file with the sensitive data loaded in the device 
 
 ######## Global Variables ########
@@ -72,7 +72,7 @@ def health_check(assigned_ip, mac_address):
         utime.sleep(5)
         print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
-            response = request.post(url=f'{server_url}/health_check', json = data, headers = {'Content-Type': 'application/json'})
+            response = requests.post(url=f'{server_url}/health_check', json = data, headers = {'Content-Type': 'application/json'})
             if response.status_code == 200:
                 print(f'[ OK ] Response from server: {response.text}')
                 send_health_check = True
@@ -179,7 +179,8 @@ def handle_request(client_socket):
             data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
             json_string = json.dumps(data_to_send)
             print(f'[ OK ] Sending data to server')
-            response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'.encode('utf-8') +  json_string.encode('utf-8')
+            response = 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nSent to db'.encode('utf-8')
+            requests.post(url=f'{server_url}/plant_data', json = data_to_send, headers = {'Content-Type': 'application/json'})
         elif 'GET /ping' in request:
             data = dict()
             data['status'] = 'OK'
