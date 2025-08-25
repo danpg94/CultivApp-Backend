@@ -236,8 +236,26 @@ def plant_handler():
 @schema.validate(ESP8266_sensor_data_schema)
 def plant_data_handler():
     if request.method == 'POST':
-        # [TODO]
-        return 'Not implemented yet\n', 501
+        data = request.json
+        unix_timestamp = int(time.time())
+        print("Sensor Number: " + data.get('sensor_num'))
+        print("Timestamp: " + str(unix_timestamp))
+        print("Temperature: " + data.get('temp'))
+        print("Relative Humidity: " + data.get('rel_hum'))
+        print("Lux: " + data.get('lux'))
+        print("Moisture Value: " + data.get('moi_ana'))
+        plant_data_collection.insert_one(
+            {
+                "timestamp": unix_timestamp,
+                "temperature": data.get('temp'),
+                "relative_humidity": data.get('rel_hum'),
+                "lux": data.get('lux'),
+                "moisture_value": data.get('moi_ana'),
+                "sensor_num": data.get('sensor_num')
+            }
+        )
+
+        return jsonify({ 'success': True, 'message': 'Added to DB' }), 200
     elif request.method == 'GET':
         print(f'[PLANT_DATA][GET] Plant list request')
         devices = list(plant_data_collection.find({}, {'_id': 0}))
