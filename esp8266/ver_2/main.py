@@ -72,7 +72,7 @@ def health_check(assigned_ip, mac_address):
         utime.sleep(5)
         print(f'[ LOG ] Attempting to connect to server on {server_url}')
         try:
-            response = request.post(url=f'{server_url}', json = data, headers = {'Content-Type': 'application/json'})
+            response = request.post(url=f'{server_url}/health_check', json = data, headers = {'Content-Type': 'application/json'})
             if response.status_code == 200:
                 print(f'[ OK ] Response from server: {response.text}')
                 send_health_check = True
