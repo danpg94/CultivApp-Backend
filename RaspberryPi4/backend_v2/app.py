@@ -43,7 +43,9 @@ try:
                          server_api=ServerApi('1'),
                          serverSelectionTimeoutMS=5000,
                          connectTimeoutMS=5000,
-                         socketTimeoutMS=5000)
+                         socketTimeoutMS=5000, 
+                         uuidRepresentation='standard'
+                         )
     client.admin.command('ping')
 except ConnectionFailure as e:
     print(f"[ERROR] Could not connect to mongoDB database {e}")
@@ -201,9 +203,9 @@ def garden_handler():
         return 'Not implemented yet\n', 501
     elif request.method == 'GET':
         print(f'[GARDEN][GET] Garden list request')
-        devices = list(garden_collection.find({}, {'_id': 0}))
-        print(f'[GARDEN][GET] {devices}\n')
-        return jsonify(devices), 200
+        gardens = list(garden_collection.find({}, {'_id': 0}))
+        print(f'[GARDEN][GET] {gardens}\n')
+        return jsonify(gardens), 200
     elif request.method == 'DELETE':
         # [TODO]
         return 'Not implemented yet\n', 501
@@ -217,12 +219,34 @@ def garden_handler():
 def plant_handler():
     if request.method == 'POST':
         # [TODO]
-        return 'Not implemented yet\n', 501
+        data = request.json
+        print(f'[PLANT][POST] Recieved new Plant')
+        print(f"\tPlant Name: {data.get('plant_name')}")
+        print(f"\tPlant Type: {data.get('plant_type')}")
+        print(f"\tDate Planted: {data.get('plant_date')}")
+        print(f"\tDate Registered: {data.get('plant_registered')}")
+        print(f"\tData Update: {data.get('plant_update_poll')}")
+        print(f"\tData Polling activated: {data.get('update_poll_activated')}")
+        print(f"\tDevice Id (MAC): {data.get('device_mac')}")
+        print(f"\tSensor number: {data.get('soil_sens_num')}")
+        plant_collection.insert_one(
+            {
+                'plant_name': data.get('plant_name'),
+                'plant_type': data.get('plant_type'),
+                'plant_date': data.get('plant_date'),
+                'plant_registered': data.get('plant_registered'),
+                'plant_update_poll': data.get('plant_update_poll'),
+                'update_poll_activated': data.get('update_poll_activated'),
+                'device_mac': data.get('device_mac'),
+                'soil_sens_num': data.get('soil_sens_num')
+            }
+        )
+        return jsonify({ 'success': True, 'message': 'Added to DB' }), 200
     elif request.method == 'GET':
         print(f'[PLANT][GET] Plant list request')
-        devices = list(plant_collection.find({}, {'_id': 0}))
-        print(f'[PLANT][GET] {devices}\n')
-        return jsonify(devices), 200
+        plants = list(plant_collection.find({}, {'_id': 0}))
+        print(f'[PLANT][GET] {plants}\n')
+        return jsonify(plants), 200
     elif request.method == 'DELETE':
         # [TODO]
         return 'Not implemented yet\n', 501
@@ -238,12 +262,13 @@ def plant_data_handler():
     if request.method == 'POST':
         data = request.json
         unix_timestamp = int(time.time())
-        print("Sensor Number: " + data.get('sensor_num'))
-        print("Timestamp: " + str(unix_timestamp))
-        print("Temperature: " + data.get('temp'))
-        print("Relative Humidity: " + data.get('rel_hum'))
-        print("Lux: " + data.get('lux'))
-        print("Moisture Value: " + data.get('moi_ana'))
+        print(f'[PLANT_DATA][POST] Recieved Plant data')
+        print("\tSensor Number: " + data.get('sensor_num'))
+        print("\tTimestamp: " + str(unix_timestamp))
+        print("\tTemperature: " + data.get('temp'))
+        print("\tRelative Humidity: " + data.get('rel_hum'))
+        print("\tLux: " + data.get('lux'))
+        print("\tMoisture ADC Value: " + data.get('moi_ana'))
         plant_data_collection.insert_one(
             {
                 "timestamp": unix_timestamp,
@@ -254,13 +279,12 @@ def plant_data_handler():
                 "sensor_num": data.get('sensor_num')
             }
         )
-
         return jsonify({ 'success': True, 'message': 'Added to DB' }), 200
     elif request.method == 'GET':
-        print(f'[PLANT_DATA][GET] Plant list request')
-        devices = list(plant_data_collection.find({}, {'_id': 0}))
-        print(f'[PLANT_DATA][GET] {devices}\n')
-        return jsonify(devices), 200
+        print(f'[PLANT_DATA][GET] Plant data list request')
+        plant_data = list(plant_data_collection.find({}, {'_id': 0}))
+        print(f'[PLANT_DATA][GET] {plant_data}\n')
+        return jsonify(plant_data), 200
     elif request.method == 'DELETE':
         # [TODO]
         return 'Not implemented yet\n', 501

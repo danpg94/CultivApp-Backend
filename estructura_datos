@@ -10,6 +10,7 @@ Planta:
     nombre_planta:
     tipo_planta:
     fecha_de_siembra:
+    fecha_de_registro:
     actualización_datos:
     recepción_datos_activado (Verdadero o Falso):
     Dispositivo:
