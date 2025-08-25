@@ -150,7 +150,7 @@ def validation_error(e):
 def index():
     return f"Raspberry Pi4 4G on {ip}\nAdd /hello for a surprise :)", 200
 
-@app.route('/device', methods=['POST'])
+@app.route('/health_check', methods=['POST'])
 def recieve_device_info():
     if request.method == "POST":
         data = request.json
