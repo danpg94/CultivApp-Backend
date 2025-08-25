@@ -165,7 +165,7 @@ def recieve_device_info():
                 print(f'[ OK ] Connecting {data["dev_type"]} device to {data["dev_mac_addr"]} on {data["session_ip"]}')
             else:
                 print(f'[UPDATE] New ip detected for {data["dev_type"]} with MAC: {data["dev_mac_addr"]} on  {data["session_ip"]}. Previous was {device_entry["latest_ip"]}')
-                device_collection.update_one({"name": data["dev_mac_addr"]}, {"$set": {"name": data["dev_type"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"] , "sensor_list": data["sensors_detected"]}})
+                device_collection.update_one({"mac": data["dev_mac_addr"]}, {"$set": {"name": data["dev_type"], "mac": data["dev_mac_addr"], "latest_ip": data["session_ip"] , "sensor_list": data["sensors_detected"]}})
             
         return 'Connection OK!', 200
 
