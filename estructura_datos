@@ -1,0 +1,32 @@
+Huerto:
+    id_huerto (Asignado automaticamente): 
+    nombre_huerto:
+    tipo_dispositivo:
+    Config: TBD
+    Planta:
+
+Planta:
+    id_planta (Asignado automaticamente):
+    nombre_planta:
+    tipo_planta:
+    fecha_de_siembra:
+    actualización_datos:
+    recepción_datos_activado (Verdadero o Falso):
+    Dispositivo:
+    num_sensor:
+
+Dispositivo:
+    tipo_microcontrolador:
+    dirección_mac:
+    ip_actual:
+    sensores_activos_actuales:
+
+Datos_plantas:
+    id_planta (de Planta):
+    temp:
+    lux:
+    hum_rel:
+    valor_adc:
+    timestamp:
+    Dispositivo:
+    num_sensor:

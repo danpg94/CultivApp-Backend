@@ -53,8 +53,11 @@ except ConnectionFailure as e:
 plant_db = client["ver_2bd"]
 
 # Define collection or create collection if not exists
-plant_collection = plant_db["esp8266_sensor_data"]
+plant_collection = plant_db["plants"]
 device_collection = plant_db["devices"]
+garden_collection = plant_db["gardens"]
+plant_data_collection = plant_db["plant_data"]
+
 
 # Get current assigned IP using hostname command on Linux
 y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
@@ -150,6 +153,7 @@ def validation_error(e):
 def index():
     return f"Raspberry Pi4 4G on {ip}\nAdd /hello for a surprise :)", 200
 
+# [TODO] Change this to a better health_check instead of a device handler
 @app.route('/health_check', methods=['POST'])
 def recieve_device_info():
     if request.method == "POST":
@@ -169,14 +173,83 @@ def recieve_device_info():
             
         return 'Connection OK!', 200
 
+@app.route('/device', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
+def device_handler():
+    if request.method == 'POST':
+        print(f'[DEVICE][POST] Device Entry detected')
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'GET':
+        print(f'[DEVICE][GET] Device list request')
+        devices = list(device_collection.find({}, {'_id': 0}))
+        print(f'[DEVICE][GET] {devices}\n')
+        return jsonify(devices), 200
+    elif request.method == 'DELETE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'UPDATE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    else:
+        return 'Not Found\n', 404
 
-@app.route('/sensor_data', methods=['POST', 'GET', 'DELETE'])
+
+@app.route('/garden', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
+def garden_handler():
+    if request.method == 'POST':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'GET':
+        print(f'[GARDEN][GET] Garden list request')
+        devices = list(garden_collection.find({}, {'_id': 0}))
+        print(f'[GARDEN][GET] {devices}\n')
+        return jsonify(devices), 200
+    elif request.method == 'DELETE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'UPDATE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    else:
+        return 'Not Found\n', 404
+
+@app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
+def plant_handler():
+    if request.method == 'POST':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'GET':
+        print(f'[PLANT][GET] Plant list request')
+        devices = list(plant_collection.find({}, {'_id': 0}))
+        print(f'[PLANT][GET] {devices}\n')
+        return jsonify(devices), 200
+    elif request.method == 'DELETE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'UPDATE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    else:
+        return 'Not Found\n', 404
+
+@app.route('/plant_data', methods=['POST', 'GET', 'DELETE'])
 @schema.validate(ESP8266_sensor_data_schema)
-def handle_json():
-    pass
+def plant_data_handler():
+    if request.method == 'POST':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    elif request.method == 'GET':
+        print(f'[PLANT_DATA][GET] Plant list request')
+        devices = list(plant_data_collection.find({}, {'_id': 0}))
+        print(f'[PLANT_DATA][GET] {devices}\n')
+        return jsonify(devices), 200
+    elif request.method == 'DELETE':
+        # [TODO]
+        return 'Not implemented yet\n', 501
+    else:
+        return 'Not Found\n', 404
 
 
-# interval examples
 @scheduler.task("interval", id="do_job_1", minutes=24, misfire_grace_time=900)
 def job1():
     """Sample job 1."""
