@@ -177,7 +177,8 @@ def handle_request(client_socket):
             json_data_recieved = json.loads(json_payload_bytes)
             # print(json_data_recieved)
             data_to_send = get_sensor_data(int(json_data_recieved['sensor_num']))
-            json_string = json.dumps(data_to_send)
+            data_to_send['plant_id'] = json_data_recieved['plant_id']
+            
             print(f'[ OK ] Sending data to server')
             response = 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nSent to db'.encode('utf-8')
             requests.post(url=f'{server_url}/plant_data', json = data_to_send, headers = {'Content-Type': 'application/json'})
