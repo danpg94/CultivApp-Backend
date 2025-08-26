@@ -122,22 +122,22 @@ def curl_ping_device(device_ip):
         c.close()
         return False
 
-def load_request_jobs(devices_entry):
-    sensor_num = '0'
-    for device in devices_entry:
-        print(f'[LOG] Pinging {device["name"]} on {device["latest_ip"]}')
+def load_request_jobs(plants_entry):
+    for plant in plants_entry:
+        device = device_collection.find_one({'mac': plant['device_mac']})
+        print(f'[LOG] Pinging {plant["plant_name"]} on {device["latest_ip"]}')
         if curl_ping_device(device['latest_ip']):
-            job_id = scheduler.add_job(id='sensor_ping_test_1' ,func=curl_post_device, args=[device['latest_ip'], sensor_num], trigger="interval", seconds=10)
+            job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
             print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
         else:
             print(f'[WARING] Ping unsuccessful, ignoring')
 
 def load_scheduler_jobs_at_startup():
-    print("\n[LOG] Attempting to look for devices in DB ...\n")
-    devices_entry = list(device_collection.find())
-    if len(devices_entry) != 0:
-        print(f'[LOG] Found {len(devices_entry)} devices!')
-        load_request_jobs(devices_entry)
+    print("\n[LOG] Attempting to look for plant entries in DB ...\n")
+    plants_entry = list(plant_collection.find())
+    if len(plants_entry) != 0:
+        print(f'[LOG] Found {len(plants_entry)} plants!')
+        load_request_jobs(plants_entry)
     else:
         print("[LOG] There are no device entries en the database")
 
@@ -292,10 +292,10 @@ def plant_data_handler():
         return 'Not Found\n', 404
 
 
-@scheduler.task("interval", id="do_job_1", minutes=24, misfire_grace_time=900)
-def job1():
-    """Sample job 1."""
-    print("Job 1 executed")
+# @scheduler.task("interval", id="do_job_1", minutes=24, misfire_grace_time=900)
+# def job1():
+#     """Sample job 1."""
+#     print("Job 1 executed")
 
 if __name__ == '__main__':
     scheduler.api_enabled = True
