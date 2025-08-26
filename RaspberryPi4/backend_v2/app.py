@@ -11,6 +11,7 @@ from dotenv import load_dotenv, find_dotenv
 import pycurl
 from io import BytesIO
 import json
+import uuid
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -80,12 +81,12 @@ ESP8266_sensor_data_schema = {
     "validationAction": "error"
 }
 
-def curl_post_device(device_ip, sensor_num):
+def curl_post_device(plant_id, device_ip, sensor_num):
     try:
         buffer = BytesIO()
         c = pycurl.Curl()
         url = f'http://{device_ip}/data/'
-        data = {"sensor_num": sensor_num}
+        data = {"sensor_num": sensor_num, "plant_id": plant_id}
         json_data = json.dumps(data)
 
         c.setopt(c.URL, url)
@@ -127,7 +128,7 @@ def load_request_jobs(plants_entry):
         device = device_collection.find_one({'mac': plant['device_mac']})
         print(f'[LOG] Pinging {plant["plant_name"]} on {device["latest_ip"]}')
         if curl_ping_device(device['latest_ip']):
-            job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
+            job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[plant['plant_id'],device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
             print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
         else:
             print(f'[WARING] Ping unsuccessful, ignoring')
@@ -220,7 +221,9 @@ def plant_handler():
     if request.method == 'POST':
         # [TODO]
         data = request.json
+        assigned_uuid = str(uuid.uuid4()).split('-')[0]
         print(f'[PLANT][POST] Recieved new Plant')
+        print(f"\tUUID: {assigned_uuid}")
         print(f"\tPlant Name: {data.get('plant_name')}")
         print(f"\tPlant Type: {data.get('plant_type')}")
         print(f"\tDate Planted: {data.get('plant_date')}")
@@ -231,6 +234,7 @@ def plant_handler():
         print(f"\tSensor number: {data.get('soil_sens_num')}")
         plant_collection.insert_one(
             {
+                'plant_id': assigned_uuid,
                 'plant_name': data.get('plant_name'),
                 'plant_type': data.get('plant_type'),
                 'plant_date': data.get('plant_date'),
@@ -261,8 +265,9 @@ def plant_handler():
 def plant_data_handler():
     if request.method == 'POST':
         data = request.json
-        unix_timestamp = int(time.time())
+        unix_timestamp = int(time.time()) # [TODO] Add Validation in case uuid already exists
         print(f'[PLANT_DATA][POST] Recieved Plant data')
+        print("\tPlant_ID: " + data.get('plant_id'))
         print("\tSensor Number: " + data.get('sensor_num'))
         print("\tTimestamp: " + str(unix_timestamp))
         print("\tTemperature: " + data.get('temp'))
@@ -271,6 +276,7 @@ def plant_data_handler():
         print("\tMoisture ADC Value: " + data.get('moi_ana'))
         plant_data_collection.insert_one(
             {
+                'plant_id': data.get('plant_id'),
                 "timestamp": unix_timestamp,
                 "temperature": data.get('temp'),
                 "relative_humidity": data.get('rel_hum'),
