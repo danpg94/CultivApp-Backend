@@ -126,12 +126,15 @@ def curl_ping_device(device_ip):
 def load_request_jobs(plants_entry):
     for plant in plants_entry:
         device = device_collection.find_one({'mac': plant['device_mac']})
-        print(f'[LOG] Pinging {plant["plant_name"]} on {device["latest_ip"]}')
-        if curl_ping_device(device['latest_ip']):
-            job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[plant['plant_id'],device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
-            print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
+        if device is not None:
+            if curl_ping_device(device['latest_ip']):
+                print(f'[LOG] Pinging {plant["plant_name"]} on {device["latest_ip"]}')
+                job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[plant['plant_id'],device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
+                print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
+            else:
+                print(f'[WARING] Ping unsuccessful, ignoring')
         else:
-            print(f'[WARING] Ping unsuccessful, ignoring')
+            print('[WARN] Could not find device assigned to plant! Skipping scheduling job')
 
 def load_scheduler_jobs_at_startup():
     print("\n[LOG] Attempting to look for plant entries in DB ...\n")
