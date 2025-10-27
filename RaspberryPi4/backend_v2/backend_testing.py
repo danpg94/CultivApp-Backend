@@ -8,7 +8,6 @@ for i in range(3):
         'plant_name': f'plant_{i+1}',
         'plant_type': 'Cherry Tomato',
         'plant_date': int(time.time()),
-        'plant_registered': int(time.time()),
         'plant_update_poll': random.randint(5,20),
         'update_poll_activated': True,
         'device_mac': mac_address,

@@ -87,7 +87,7 @@ plant_registration_shcema = {
     "properties": {
         "plant_name": {"type": 'string'},
         "plant_type": {"type": 'string'},
-        "date_planed": {"type": 'string'},
+        "plant_date": {"type": 'string'},
         "plant_update_poll": {"type": 'string'},
         "device_mac": {"type": 'string'},
         "soil_sens_num": {"type": 'string'}
@@ -241,12 +241,13 @@ def plant_handler():
         # [TODO]
         data = request.json
         assigned_uuid = str(uuid.uuid4()).split('-')[0]
+        date_registered = int(time.time())
         print(f'[PLANT][POST] Recieved new Plant')
         print(f"\tUUID: {assigned_uuid}")
         print(f"\tPlant Name: {data.get('plant_name')}")
         print(f"\tPlant Type: {data.get('plant_type')}")
         print(f"\tDate Planted: {data.get('plant_date')}")
-        print(f"\tDate Registered: {data.get('plant_registered')}")
+        print(f"\tDate Registered: {date_registered}")
         print(f"\tData Update: {data.get('plant_update_poll')}")
         print(f"\tData Polling activated: {data.get('update_poll_activated')}")
         print(f"\tDevice Id (MAC): {data.get('device_mac')}")
@@ -257,7 +258,7 @@ def plant_handler():
                 'plant_name': data.get('plant_name'),
                 'plant_type': data.get('plant_type'),
                 'plant_date': data.get('plant_date'),
-                'plant_registered': data.get('plant_registered'),
+                'plant_registered': date_registered,
                 'plant_update_poll': data.get('plant_update_poll'),
                 'update_poll_activated': data.get('update_poll_activated'),
                 'device_mac': data.get('device_mac'),
@@ -279,7 +280,7 @@ def plant_handler():
                 found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
                 if found_plant:
                     return jsonify(found_plant), 200
-                return "ID not Found!", 404
+                return "ID not Found!\n", 404
             else:
                 return 'Not implemented yet\n', 501
     elif request.method == 'DELETE':
