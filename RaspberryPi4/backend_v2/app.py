@@ -266,10 +266,22 @@ def plant_handler():
         )
         return jsonify({ 'success': True, 'message': 'Added to DB' }), 200
     elif request.method == 'GET':
-        print(f'[PLANT][GET] Plant list request')
-        plants = list(plant_collection.find({}, {'_id': 0}))
-        print(f'[PLANT][GET] {plants}\n')
-        return jsonify(plants), 200
+        if not request.data:
+            print(f'[PLANT][GET] Plant list request')
+            plants = list(plant_collection.find({}, {'_id': 0}))
+            print(f'[PLANT][GET] {plants}\n')
+            return jsonify(plants), 200
+        else:
+            data = request.json
+            if data.get('plant_id'):
+                plant_id = data.get("plant_id")
+                # print(f'[PLANT][GET][ID] {plant_id}')
+                found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
+                if found_plant:
+                    return jsonify(found_plant), 200
+                return "ID not Found!", 404
+            else:
+                return 'Not implemented yet\n', 501
     elif request.method == 'DELETE':
         # [TODO]
         return 'Not implemented yet\n', 501
