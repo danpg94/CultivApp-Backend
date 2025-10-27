@@ -83,7 +83,7 @@ ESP8266_sensor_data_schema = {
 
 # Shema for plant registration data
 plant_registration_shcema = {
-    "required": ["plant_name", "plant_type", "date_planted", "plant_update_poll", "device_mac", "soil_sens_num"],
+    "required": ["plant_name", "plant_type", "plant_date", "plant_update_poll", "device_mac", "soil_sens_num"],
     "properties": {
         "plant_name": {"type": 'string'},
         "plant_type": {"type": 'string'},
@@ -276,7 +276,7 @@ def plant_handler():
             data = request.json
             if data.get('plant_id'):
                 plant_id = data.get("plant_id")
-                # print(f'[PLANT][GET][ID] {plant_id}')
+                print(f'[PLANT][GET][ID] Plant request {plant_id}')
                 found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
                 if found_plant:
                     return jsonify(found_plant), 200
@@ -284,8 +284,16 @@ def plant_handler():
             else:
                 return 'Not implemented yet\n', 501
     elif request.method == 'DELETE':
-        # [TODO]
-        return 'Not implemented yet\n', 501
+        if request.data:
+            data = request.json
+            if data.get('plant_id'):
+                plant_id = data.get('plant_id')
+                print(f'[PLANT][DELETE][ID] Delete Plant: {plant_id}')
+                deleted_plant = plant_collection.delete_one({'plant_id': plant_id})
+                if deleted_plant.deleted_count:
+                    return f'Plant {plant_id} Deleted Successfully\n', 200
+                return f'Plant {plant_id} NOT Found!\n', 404
+        return 'Error\n', 404
     elif request.method == 'UPDATE':
         # [TODO]
         return 'Not implemented yet\n', 501
