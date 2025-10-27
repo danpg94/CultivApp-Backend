@@ -81,6 +81,21 @@ ESP8266_sensor_data_schema = {
     "validationAction": "error"
 }
 
+# Shema for plant registration data
+plant_registration_shcema = {
+    "required": ["plant_name", "plant_type", "date_planted", "plant_update_poll", "device_mac", "soil_sens_num"],
+    "properties": {
+        "plant_name": {"type": 'string'},
+        "plant_type": {"type": 'string'},
+        "date_planed": {"type": 'string'},
+        "plant_update_poll": {"type": 'string'},
+        "device_mac": {"type": 'string'},
+        "soil_sens_num": {"type": 'string'}
+    },
+    "validationLevel": "strict",
+    "validationAction": "error" 
+}
+
 def curl_post_device(plant_id, device_ip, sensor_num):
     try:
         buffer = BytesIO()
@@ -220,6 +235,7 @@ def garden_handler():
         return 'Not Found\n', 404
 
 @app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
+@schema.validate(plant_registration_shcema)
 def plant_handler():
     if request.method == 'POST':
         # [TODO]
@@ -300,11 +316,6 @@ def plant_data_handler():
     else:
         return 'Not Found\n', 404
 
-
-# @scheduler.task("interval", id="do_job_1", minutes=24, misfire_grace_time=900)
-# def job1():
-#     """Sample job 1."""
-#     print("Job 1 executed")
 
 if __name__ == '__main__':
     scheduler.api_enabled = True
