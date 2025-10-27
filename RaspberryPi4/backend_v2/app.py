@@ -238,7 +238,6 @@ def garden_handler():
 @schema.validate(plant_registration_shcema)
 def plant_handler():
     if request.method == 'POST':
-        # [TODO]
         data = request.json
         assigned_uuid = str(uuid.uuid4()).split('-')[0]
         date_registered = int(time.time())
@@ -293,12 +292,24 @@ def plant_handler():
                 if deleted_plant.deleted_count:
                     return f'Plant {plant_id} Deleted Successfully\n', 200
                 return f'Plant {plant_id} NOT Found!\n', 404
-        return 'Error\n', 404
+        return 'Error: No ID provided\n', 404
     elif request.method == 'UPDATE':
-        # [TODO]
-        return 'Not implemented yet\n', 501
+        # [TODO]: Finish UPDATE implementation
+        if request.data:
+            data = request.json
+            if data.get('plant_id'):
+                plant_id = data.get('plant_id')
+                found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
+                if found_plant:
+                    print(f'[PLANT][UPDATE][ID] Update Plant: {plant_id}')
+                    # [TODO] Define how frontend will send info
+                    return 'YAY! :D\n', 200
+                else:
+                    print(f'[PLANT][UPDATE][ID] Plant: {plant_id} NOT FOUND!')
+                    return 'Error: Plant ID not found', 404
+        return 'Error: No ID provided\n', 404
     else:
-        return 'Not Found\n', 404
+        return 'Not implemented\n', 501
 
 @app.route('/plant_data', methods=['POST', 'GET', 'DELETE'])
 @schema.validate(ESP8266_sensor_data_schema)
