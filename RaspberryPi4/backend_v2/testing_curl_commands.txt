@@ -1,0 +1,36 @@
+# GET plants Successful
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"91287a1a"}' 192.168.0.6:2000/plant
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"889f0336"}' 192.168.0.6:2000/plant
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"ffea6a9a"}' 192.168.0.6:2000/plant
+curl -X GET 192.168.0.6:2000/plant
+
+# GET plants unsuccessful
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000"}' 192.168.0.6:2000/plant
+
+# POST plants Successful
+curl -X POST -H "Content-type: application/json" -d '{"plant_name":"plant_test_1","plant_type":"Cherry Tomato","plant_date":"1756173494","plant_update_poll":"20","update_poll_activated":"True","device_mac":"00:00:00:00:00:00","soil_sens_num":"0"}' 192.168.0.6:2000/plant
+
+# POST plants unsuccessful
+curl -X POST -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000"}' 192.168.0.6:2000/plant
+
+# DELETE plants successful
+curl -X DELETE -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":""}' 192.168.0.6:2000/plant
+
+# DELETE plants unsuccessful
+curl -X DELETE -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000000"}' 192.168.0.6:2000/plant
+
+# UPDATE plant successful
+curl -X UPDATE -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":""}' 192.168.0.6:2000/plant
+
+# UPDATE plant unsuccessful
+curl -X UPDATE -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000000"}' 192.168.0.6:2000/plant
+
+
+
+
+# GET plant_data successful
+curl -X GET 192.168.0.6:2000/plant_data
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"91287a1a"}' 192.168.0.6:2000/plant_data
+
+# GET plant_data unsuccessful
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000000"}' 192.168.0.6:2000/plant_data

@@ -239,7 +239,7 @@ def garden_handler():
 def plant_handler():
     if request.method == 'POST':
         data = request.json
-        assigned_uuid = str(uuid.uuid4()).split('-')[0]
+        assigned_uuid = str(uuid.uuid4()).split('-')[0] # [TODO] Add Validation in case uuid already exists
         date_registered = int(time.time())
         print(f'[PLANT][POST] Recieved new Plant')
         print(f"\tUUID: {assigned_uuid}")
@@ -316,7 +316,7 @@ def plant_handler():
 def plant_data_handler():
     if request.method == 'POST':
         data = request.json
-        unix_timestamp = int(time.time()) # [TODO] Add Validation in case uuid already exists
+        unix_timestamp = int(time.time())
         print(f'[PLANT_DATA][POST] Recieved Plant data')
         print("\tPlant_ID: " + data.get('plant_id'))
         print("\tSensor Number: " + data.get('sensor_num'))
@@ -338,10 +338,26 @@ def plant_data_handler():
         )
         return jsonify({ 'success': True, 'message': 'Added to DB' }), 200
     elif request.method == 'GET':
-        print(f'[PLANT_DATA][GET] Plant data list request')
-        plant_data = list(plant_data_collection.find({}, {'_id': 0}))
-        print(f'[PLANT_DATA][GET] {plant_data}\n')
-        return jsonify(plant_data), 200
+        if not request.data:
+            print(f'[PLANT_DATA][GET] All Plant data list request')
+            plant_data = list(plant_data_collection.find({}, {'_id': 0}))
+            print(f'[PLANT_DATA][GET] {plant_data}\n')
+            return jsonify(plant_data), 200
+        else:
+            data = request.json 
+            if data.get('plant_id'):
+                plant_id = data.get('plant_id')
+                if data.get('dates'):
+                    # [TODO]: implement a date query method
+                    return 'Not implemented yet', 501
+                print(f'[PLANT_DATA][GET] Plant: {plant_id} data request')
+                plant_data = list(plant_data_collection.find({'plant_id': plant_id}, {'_id': 0}))
+                # print(plant_data)
+                if not any(plant_data):
+                    return 'Error: Plant ID Not Found\n', 404
+                return jsonify(plant_data), 200
+            else:
+                return 'Error: Plant ID not provided\n', 404
     elif request.method == 'DELETE':
         # [TODO]
         return 'Not implemented yet\n', 501
