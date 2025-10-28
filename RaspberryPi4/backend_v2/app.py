@@ -359,8 +359,15 @@ def plant_data_handler():
             else:
                 return 'Error: Plant ID not provided\n', 404
     elif request.method == 'DELETE':
-        # [TODO]
-        return 'Not implemented yet\n', 501
+        if request.data:
+            data = request.json
+            if data.get('plant_id'):
+                plant_id = data.get('plant_id')
+                deleted_plant_data = plant_data_collection.delete_many({'plant_id': plant_id})
+                if deleted_plant_data.deleted_count:
+                    return f'Plant data from plant id {plant_id} Deleted Successfully\n', 200
+                return f'Plant data from plant ID {plant_id} NOT found\n', 404
+        return 'Error: No ID provided\n', 404
     else:
         return 'Not Found\n', 404
 
