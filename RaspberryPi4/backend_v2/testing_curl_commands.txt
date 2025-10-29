@@ -8,7 +8,7 @@ curl -X GET 192.168.0.6:2000/plant
 curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000"}' 192.168.0.6:2000/plant
 
 # POST plants Successful
-curl -X POST -H "Content-type: application/json" -d '{"plant_name":"plant_test_1","plant_type":"Cherry Tomato","plant_date":"1756173494","plant_update_poll":"20","update_poll_activated":"True","device_mac":"00:00:00:00:00:00","soil_sens_num":"0"}' 192.168.0.6:2000/plant
+curl -X POST -H "Content-type: application/json" -d '{"plant_name":"plant_test_1","plant_type":"Cherry Tomato","plant_date":1756173494,"plant_update_poll":20,"update_poll_activated":true,"device_mac":"00:00:00:00:00:00","soil_sens_num":0}' 192.168.0.6:2000/plant
 
 # POST plants unsuccessful
 curl -X POST -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000"}' 192.168.0.6:2000/plant

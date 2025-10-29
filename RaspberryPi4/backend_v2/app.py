@@ -81,16 +81,17 @@ ESP8266_sensor_data_schema = {
     "validationAction": "error"
 }
 
-# Shema for plant registration data
-plant_registration_shcema = {
+# Schema for plant registration data
+plant_registration_schema = {
     "required": ["plant_name", "plant_type", "plant_date", "plant_update_poll", "device_mac", "soil_sens_num"],
     "properties": {
         "plant_name": {"type": 'string'},
         "plant_type": {"type": 'string'},
-        "plant_date": {"type": 'string'},
-        "plant_update_poll": {"type": 'string'},
+        "plant_date": {"type": 'integer'},
+        "plant_update_poll": {"type": 'integer'},
+        "update_poll_activated": {"type": 'boolean'},
         "device_mac": {"type": 'string'},
-        "soil_sens_num": {"type": 'string'}
+        "soil_sens_num": {"type": 'integer'}
     },
     "validationLevel": "strict",
     "validationAction": "error" 
@@ -235,7 +236,7 @@ def garden_handler():
         return 'Not Found\n', 404
 
 @app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
-@schema.validate(plant_registration_shcema)
+@schema.validate(plant_registration_schema)
 def plant_handler():
     if request.method == 'POST':
         data = request.json
