@@ -34,3 +34,7 @@ curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d
 
 # GET plant_data unsuccessful
 curl -X GET -H "Content-type: application/json" -H "Accept: application/json" -d '{"plant_id":"00000000"}' 192.168.0.6:2000/plant_data
+
+
+# GET device successful
+curl -X POST -H "Content-type: application/json" -d '{"dev_type":"ESP8266","dev_mac_addr":"00:00:00:00:00:00","session_ip":"0.0.0.0","sensors_detected":[{"soil_sens_5":false},{"soil_sens_4":false},{"soil_sens_3":false},{"soil_sens_2":false},{"soil_sens_1":false},{"soil_sens_0":false},{"temp_hum_sens":true},{"light_sens":true},{"soil_sens_7":false},{"soil_sens_6":false}]}' 192.168.0.6:2000/device

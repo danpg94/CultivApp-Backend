@@ -1,0 +1,18 @@
+- implement device POST, GET, DELETE and UPDATE on app.py 
+
+- implement checks on existing plants, devices, etc 
+
+- plant data GET with timestamp filtering
+
+- implement archiving functionality
+
+- implement sensor calibration functionality
+
+- Dockerize app
+
+
+
+
+
+- implement better health_check
+- testing suite (?)

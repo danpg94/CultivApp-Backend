@@ -67,6 +67,13 @@ y = subprocess.run(['/usr/bin/hostname', '-I'], capture_output=True)
 ipAddrs = y.stdout.split()
 ip = ipAddrs[0].decode("utf-8")
 
+# Schema for device
+# [TODO]: Change names of fields to avoid confusion
+device_registration_schema = {
+    "required": ["dev_type", "dev_mac_addr", "session_ip", "sensors_detected"]
+
+}
+
 # Schema for ESP8266 sensor data
 ESP8266_sensor_data_schema = {
     "required": ["temp", "rel_hum", "lux", "moi_ana"],
@@ -198,9 +205,20 @@ def recieve_device_info():
 @app.route('/device', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
 def device_handler():
     if request.method == 'POST':
-        print(f'[DEVICE][POST] Device Entry detected')
-        # [TODO]
-        return 'Not implemented yet\n', 501
+        data = request.json
+        device_entry = device_collection.find_one({"mac": data["dev_mac_addr"]})
+        if device_entry == None:
+            print(f'[NEW DEVICE] New {data["dev_type"]} Device detected with MAC: {data["dev_mac_addr"]} on {data["session_ip"]}')
+            device_collection.insert_one(
+                {
+                    "name": data["dev_type"], 
+                    "mac": data["dev_mac_addr"], 
+                    "latest_ip": data["session_ip"], 
+                    "sensor_list": data["sensors_detected"]
+                }
+            )
+            return 'Device added successfuly\n', 200
+        return 'Error: No information sent', 404 
     elif request.method == 'GET':
         print(f'[DEVICE][GET] Device list request')
         devices = list(device_collection.find({}, {'_id': 0}))
