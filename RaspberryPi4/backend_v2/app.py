@@ -152,7 +152,7 @@ def load_request_jobs(plants_entry):
         if device is not None:
             if curl_ping_device(device['latest_ip']):
                 print(f'[LOG] Pinging {plant["plant_name"]} on {device["latest_ip"]}')
-                job_id = scheduler.add_job(id=f'{plant["plant_name"]}' ,func=curl_post_device, args=[plant['plant_id'],device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
+                job_id = scheduler.add_job(id=f'{plant["plant_id"]}' ,func=curl_post_device, args=[plant['plant_id'],device['latest_ip'], plant['soil_sens_num']], trigger="interval", seconds=plant['plant_update_poll'])
                 print(f'[LOG] Ping successful, adding to scheduler: {job_id}')
             else:
                 print(f'[WARING] Ping unsuccessful, ignoring')
@@ -253,6 +253,19 @@ def garden_handler():
     else:
         return 'Not Found\n', 404
 
+@app.route('/plant/<plant_id>', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
+def single_plant_handler(plant_id):
+    if request.method == 'GET':
+        # data = request.json
+        # plant_id = data.get("plant_id")
+        print(f'[PLANT][GET][ID] Plant request {plant_id}')
+        found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
+        if found_plant:
+            return jsonify(found_plant), 200
+        return "ID not Found!\n", 404
+    return 'Not implemented yet\n', 501
+
+
 @app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
 @schema.validate(plant_registration_schema)
 def plant_handler():
@@ -330,6 +343,23 @@ def plant_handler():
     else:
         return 'Not implemented\n', 501
 
+@app.route('/plant_data/<plant_id>', methods=['POST', 'GET', 'DELETE'])
+def single_plant_data_handler(plant_id):
+    if request.method == 'GET':
+        # data = request.json 
+        # plant_id = data.get('plant_id')
+        #if data.get('dates'):
+        #    # [TODO]: implement a date query method
+        #    return 'Not implemented yet', 501
+        print(f'[PLANT_DATA][GET] Plant: {plant_id} data request')
+        plant_data = list(plant_data_collection.find({'plant_id': plant_id}, {'_id': 0}))
+        print(f'[PLANT_DATA][GET] Sending plant_id {plant_id} records: {len(plant_data)}\n')
+        # print(plant_data)
+        if not any(plant_data):
+            return 'Error: Plant ID Not Found\n', 404
+    return jsonify(plant_data), 200
+
+
 @app.route('/plant_data', methods=['POST', 'GET', 'DELETE'])
 @schema.validate(ESP8266_sensor_data_schema)
 def plant_data_handler():
@@ -360,7 +390,7 @@ def plant_data_handler():
         if not request.data:
             print(f'[PLANT_DATA][GET] All Plant data list request')
             plant_data = list(plant_data_collection.find({}, {'_id': 0}))
-            print(f'[PLANT_DATA][GET] {plant_data}\n')
+            print(f'[PLANT_DATA][GET] Total Plant data sent: {len(plant_data)}\n')
             return jsonify(plant_data), 200
         else:
             data = request.json 
