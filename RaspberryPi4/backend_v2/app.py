@@ -146,6 +146,32 @@ def curl_ping_device(device_ip):
         c.close()
         return False
 
+def update_scheduler_job(plant_id, device_mac, interval, soil_sens_num, reason=""):
+    """Función auxiliar para actualizar el job del scheduler"""
+    device = device_collection.find_one({'mac': device_mac})
+    if device is None:
+        print(f'\t[WARNING] Device {device_mac} not found in database, scheduler job not updated')
+        return False
+    
+    if not curl_ping_device(device['latest_ip']):
+        print(f'\t[WARNING] Device {device_mac} is not reachable, scheduler job not updated')
+        return False
+    
+    try:
+        scheduler.remove_job(plant_id)
+    except:
+        pass  # El job puede no existir
+    
+    job_id = scheduler.add_job(
+        id=f'{plant_id}',
+        func=curl_post_device,
+        args=[plant_id, device['latest_ip'], soil_sens_num],
+        trigger="interval",
+        seconds=interval
+    )
+    print(f'\t[LOG] Updated scheduler job for {plant_id} (interval: {interval}s, sensor: {soil_sens_num}){f" - {reason}" if reason else ""}')
+    return True
+
 def load_request_jobs(plants_entry):
     for plant in plants_entry:
         device = device_collection.find_one({'mac': plant['device_mac']})
@@ -266,10 +292,14 @@ def single_plant_handler(plant_id):
     return 'Not implemented yet\n', 501
 
 
-@app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET'])
-@schema.validate(plant_registration_schema)
+@app.route('/plant', methods=['POST', 'UPDATE', 'DELETE', 'GET', 'PUT']) 
 def plant_handler():
     if request.method == 'POST':
+        # Validar schema solo para POST
+        try:
+            schema.validate(request.json, plant_registration_schema)
+        except JsonValidationError as e:
+            return jsonify({'error': e.message, 'errors': [validation_error.message for validation_error in e.errors]}), 406
         data = request.json
         assigned_uuid = str(uuid.uuid4()).split('-')[0] # [TODO] Add Validation in case uuid already exists
         date_registered = int(time.time())
@@ -325,21 +355,69 @@ def plant_handler():
                     return f'Plant {plant_id} Deleted Successfully\n', 200
                 return f'Plant {plant_id} NOT Found!\n', 404
         return 'Error: No ID provided\n', 404
-    elif request.method == 'UPDATE':
-        # [TODO]: Finish UPDATE implementation
-        if request.data:
-            data = request.json
-            if data.get('plant_id'):
-                plant_id = data.get('plant_id')
-                found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
-                if found_plant:
-                    print(f'[PLANT][UPDATE][ID] Update Plant: {plant_id}')
-                    # [TODO] Define how frontend will send info
-                    return 'YAY! :D\n', 200
-                else:
-                    print(f'[PLANT][UPDATE][ID] Plant: {plant_id} NOT FOUND!')
-                    return 'Error: Plant ID not found', 404
-        return 'Error: No ID provided\n', 404
+
+    elif request.method == 'UPDATE' or request.method == 'PUT':
+        if not request.data:
+            return jsonify({'success': False, 'message': 'Error: No data provided'}), 400
+        
+        data = request.json
+        if not data.get('plant_id'):
+            return jsonify({'success': False, 'message': 'Error: No plant_id provided'}), 400
+        
+        plant_id = data.get('plant_id')
+        found_plant = plant_collection.find_one({'plant_id': plant_id}, {'_id': 0})
+        if not found_plant:
+            return jsonify({'success': False, 'message': 'Plant ID not found'}), 404
+        
+        print(f'[PLANT][UPDATE][ID] Update Plant: {plant_id}')
+        
+        # Campos no editables
+        if 'plant_id' in data:
+            print(f'\t[WARNING] plant_id cannot be modified, ignoring')
+        if 'plant_registered' in data:
+            print(f'\t[WARNING] plant_registered cannot be modified, ignoring')
+        if data.get('device_mac') is not None:
+            print(f'\t[WARNING] device_mac cannot be modified, ignoring')
+        
+        # Construir diccionario de actualización
+        update_fields = {}
+        editable_fields = ['plant_name', 'plant_type', 'plant_date', 'plant_update_poll', 'update_poll_activated', 'soil_sens_num']
+        
+        for field in editable_fields:
+            if data.get(field) is not None:
+                update_fields[field] = data.get(field)
+                print(f'\t{field.replace("_", " ").title()}: {data.get(field)}')
+        
+        # Manejar actualización del scheduler si es necesario
+        device_mac = found_plant.get('device_mac')
+        update_poll_activated = data.get('update_poll_activated') if data.get('update_poll_activated') is not None else found_plant.get('update_poll_activated', False)
+        plant_update_poll = data.get('plant_update_poll') if data.get('plant_update_poll') is not None else found_plant.get('plant_update_poll')
+        soil_sens_num = data.get('soil_sens_num') if data.get('soil_sens_num') is not None else found_plant.get('soil_sens_num', 1)
+        
+        # Si se desactiva el polling, remover el job
+        if data.get('update_poll_activated') is not None and not update_poll_activated:
+            try:
+                scheduler.remove_job(plant_id)
+                print(f'\t[LOG] Removed scheduler job for {plant_id} (polling deactivated)')
+            except:
+                pass
+        # Si se actualiza intervalo, sensor, o se activa polling, actualizar scheduler
+        elif (data.get('plant_update_poll') is not None or data.get('soil_sens_num') is not None or 
+              (data.get('update_poll_activated') is not None and update_poll_activated)) and update_poll_activated and plant_update_poll:
+            update_scheduler_job(plant_id, device_mac, plant_update_poll, soil_sens_num)
+        
+        # Actualizar en la base de datos
+        if update_fields:
+            result = plant_collection.update_one({'plant_id': plant_id}, {'$set': update_fields})
+            if result.modified_count > 0:
+                print(f'[PLANT][UPDATE][ID] Plant {plant_id} updated successfully')
+                return jsonify({'success': True, 'message': f'Plant {plant_id} updated successfully'}), 200
+            else:
+                return jsonify({'success': False, 'message': 'No changes were made'}), 200
+        else:
+            return jsonify({'success': False, 'message': 'No valid fields provided for update'}), 400
+
+
     else:
         return 'Not implemented\n', 501
 
